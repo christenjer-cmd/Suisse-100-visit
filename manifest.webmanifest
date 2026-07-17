@@ -1,0 +1,16 @@
+{
+  "name": "Suisse 100",
+  "short_name": "Suisse 100",
+  "description": "Notre liste à deux pour découvrir la Suisse profonde — objectif : 100 avant l'été 2028.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#faf7f1",
+  "theme_color": "#d52b1e",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

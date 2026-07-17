@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#d52b1e">
+<title>Suisse 100 — notre liste à deux</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2218%22 fill=%22%23d52b1e%22/><rect x=%2242%22 y=%2220%22 width=%2216%22 height=%2260%22 fill=%22white%22/><rect x=%2220%22 y=%2242%22 width=%2260%22 height=%2216%22 fill=%22white%22/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800;9..144,900&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<style>
+:root{
+  --bg:#f6f3ec; --card:#fffdf8; --ink:#221d15; --mut:#8a8172; --line:#e9e2d3; --soft:#efe9db;
+  --red:#d5301f; --red2:#a52310; --ok:#3a7d44; --ok-bg:#edf4e7; --amber:#a9720d;
+  --tint-vil:#b98118; --tint-tra:#c2452e; --tint-som:#5a6acf; --tint-eau:#2a8fbd; --tint-ran:#4c9a52;
+  --tint-fet:#a355c0; --tint-gas:#d99a26; --tint-cul:#8a7b64; --tint-ins:#d4568e;
+  --shadow:0 1px 2px rgba(64,50,25,.05),0 4px 14px rgba(64,50,25,.06);
+  --shadow-2:0 10px 30px rgba(64,50,25,.14);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#151310; --card:#201d18; --ink:#f0ebe1; --mut:#9d9482; --line:#332f27; --soft:#2a2720;
+    --red:#f05543; --red2:#d5301f; --ok:#8bc98a; --ok-bg:#222f1e; --amber:#e3aa4a;
+    --tint-vil:#d9a13c; --tint-tra:#e06b52; --tint-som:#8b98e8; --tint-eau:#56b1d8; --tint-ran:#74bd7a;
+    --tint-fet:#c07fd8; --tint-gas:#e8b64d; --tint-cul:#ad9f85; --tint-ins:#e57ba8;
+    --shadow:0 1px 3px rgba(0,0,0,.4);
+    --shadow-2:0 12px 34px rgba(0,0,0,.55);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Outfit",-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.topbar{height:4px;background:linear-gradient(90deg,var(--red),var(--red2))}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+button{font-family:inherit}
+
+/* ---- header ---- */
+.hero{padding:30px 0 0}
+.brand{display:flex;align-items:center;gap:15px}
+.cross{
+  width:46px;height:46px;border-radius:13px;flex:none;position:relative;
+  background:linear-gradient(150deg,var(--red),var(--red2));
+  transform:rotate(-4deg);
+  box-shadow:0 6px 18px color-mix(in srgb,var(--red) 32%,transparent);
+}
+.cross::before,.cross::after{content:"";position:absolute;background:#fff;border-radius:2px}
+.cross::before{left:19px;top:10px;width:8px;height:26px}
+.cross::after{left:10px;top:19px;width:26px;height:8px}
+h1{font-family:"Fraunces",Georgia,serif;font-size:42px;font-weight:900;margin:0;letter-spacing:-.5px;line-height:1}
+h1 em{font-style:italic;color:var(--red)}
+.tag{margin:12px 0 0;color:var(--mut);font-size:14.5px;max-width:54ch}
+.tag b{color:var(--ink);font-weight:600}
+.score{display:flex;align-items:baseline;gap:10px;margin-top:20px;font-family:"Fraunces",Georgia,serif}
+.score b{font-size:58px;font-weight:900;letter-spacing:-2px;line-height:1;color:var(--red)}
+.score span{color:var(--mut);font-size:20px;font-weight:600}
+.bar{position:relative;height:9px;background:var(--soft);border-radius:99px;margin-top:12px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--red),var(--red2));border-radius:99px;transition:width .6s cubic-bezier(.2,.8,.3,1)}
+.goalmark{position:absolute;top:-4px;width:3px;height:17px;background:var(--mut);border-radius:2px;opacity:.55;display:none}
+.pace{font-size:13.5px;color:var(--mut);margin:10px 0 0}
+.pace b{color:var(--ink);font-weight:600}
+.mountains{display:block;width:100%;height:52px;margin-top:16px}
+
+/* ---- vues ---- */
+.viewseg{display:flex;background:var(--soft);border-radius:999px;padding:4px;margin:16px 0 4px}
+.viewseg button{
+  flex:1;border:0;background:transparent;color:var(--mut);font-size:14px;padding:9px 6px;
+  border-radius:999px;cursor:pointer;font-weight:600;transition:color .15s;
+}
+.viewseg button.on{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+@media (max-width:640px){
+  .viewseg{
+    position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:950;
+    width:min(92vw,400px);margin:0;
+    background:color-mix(in srgb,var(--card) 88%,transparent);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--line);box-shadow:var(--shadow-2);
+  }
+  body{padding-bottom:96px}
+}
+
+/* ---- toolbar ---- */
+.toolbar{
+  position:sticky;top:0;z-index:900;padding:10px 0;
+  background:color-mix(in srgb,var(--bg) 84%,transparent);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.toolbar .inner{display:flex;gap:8px;align-items:center}
+#q{
+  flex:1;min-width:0;padding:10px 16px;border:1.5px solid var(--line);border-radius:999px;
+  background:var(--card);color:var(--ink);font-size:15px;outline:none;font-family:inherit;
+}
+#q::placeholder{color:var(--mut)}
+#q:focus{border-color:var(--red)}
+.seg{display:flex;background:var(--soft);border-radius:999px;padding:3px;flex:none}
+.seg button{border:0;background:transparent;color:var(--mut);font-size:13px;padding:7px 11px;border-radius:999px;cursor:pointer;font-weight:600}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+
+.chips{display:flex;gap:6px;padding:8px 0 2px;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+@media (min-width:700px){.chips{flex-wrap:wrap;overflow:visible}}
+.chip{
+  border:1px solid var(--line);background:transparent;color:var(--mut);
+  border-radius:999px;padding:6px 12px;font-size:12.5px;cursor:pointer;white-space:nowrap;font-weight:600;
+  transition:all .12s;
+}
+.chip small{font-size:11px;margin-left:4px;opacity:.75;font-weight:600}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+.actions{display:flex;gap:8px;flex-wrap:wrap;padding:12px 0 4px}
+.actions button{
+  border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;
+  padding:9px 16px;font-size:13.5px;cursor:pointer;font-weight:600;box-shadow:var(--shadow);
+}
+.actions .primary{
+  background:linear-gradient(150deg,var(--red),var(--red2));border-color:transparent;color:#fff;
+  box-shadow:0 5px 16px color-mix(in srgb,var(--red) 30%,transparent);
+}
+
+/* ---- carte ---- */
+#map{display:none;height:66vh;min-height:400px;border-radius:20px;border:1px solid var(--line);box-shadow:var(--shadow-2);margin:16px 0;z-index:1}
+.maplegend{font-size:12.5px;color:var(--mut);margin:-6px 0 8px;display:none}
+.dotl{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 4px 0 10px;vertical-align:middle}
+.leaflet-popup-content{font-family:"Outfit",sans-serif;font-size:13.5px;margin:12px 15px;line-height:1.5}
+.leaflet-popup-content b{font-size:14.5px}
+.leaflet-popup-content-wrapper{border-radius:14px}
+.pop-open{margin-top:7px;border:1px solid #ddd;background:#f5f2ec;border-radius:999px;padding:5px 12px;cursor:pointer;font-weight:600;font-size:12.5px;font-family:inherit}
+
+/* ---- sections & cartes ---- */
+.sec{display:flex;align-items:center;gap:10px;margin:28px 0 10px}
+.sec .dot{width:10px;height:10px;border-radius:4px;flex:none}
+.sec h2{font-family:"Fraunces",Georgia,serif;font-size:21px;font-weight:800;margin:0;letter-spacing:-.2px}
+.sec span{color:var(--mut);font-size:12.5px;font-weight:600;margin-left:auto;background:var(--soft);border-radius:999px;padding:3px 10px}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:18px;
+  padding:14px 16px;margin:10px 0;box-shadow:var(--shadow);cursor:pointer;
+  transition:transform .15s ease,box-shadow .15s ease,border-color .15s;
+}
+@media(hover:hover){.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-2)}}
+.card.done{border-color:color-mix(in srgb,var(--ok) 40%,var(--line));background:var(--ok-bg)}
+.card .top{display:flex;gap:12px;align-items:flex-start}
+.card .emo{
+  width:42px;height:42px;border-radius:13px;flex:none;
+  display:flex;align-items:center;justify-content:center;font-size:21px;
+  background:var(--soft);
+}
+.card .mid{flex:1;min-width:0}
+.card .t{font-weight:700;font-size:16px;letter-spacing:-.1px}
+.card.done .t{color:var(--ok)}
+.card .meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;align-items:center}
+.badge{font-size:11px;font-weight:600;border-radius:7px;padding:2.5px 8px;background:var(--soft);color:var(--mut)}
+.badge.k{background:transparent;border:1px solid var(--line)}
+.badge.ga-inc{background:var(--ok-bg);color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 55%,transparent)}
+.badge.ga-red{color:var(--amber);border:1px solid color-mix(in srgb,var(--amber) 55%,transparent);background:transparent}
+.badge.ga-pay{border:1px solid var(--line);background:transparent}
+.badge.ph{background:transparent;border:1px solid var(--line)}
+.card .d{font-size:13.5px;color:var(--mut);margin-top:6px;line-height:1.55}
+.card .when{font-size:12.5px;color:var(--ok);font-weight:600;margin-top:7px}
+.check{
+  flex:none;width:38px;height:38px;border-radius:50%;border:2px solid var(--line);
+  background:transparent;cursor:pointer;font-size:17px;line-height:1;color:transparent;
+  transition:all .18s;
+}
+.check:hover{border-color:var(--ok);transform:scale(1.06)}
+.card.done .check{background:var(--ok);border-color:var(--ok);color:#fff}
+.panel{display:none;margin-top:13px;padding-top:13px;border-top:1px dashed var(--line)}
+.card.open .panel{display:block}
+.minislot:empty{display:none}
+.minislot{margin:2px 0 6px}
+.minislot:has(.minimap)::after{content:"Touchez la carte pour l’agrandir";display:block;font-size:11px;color:var(--mut);margin-top:5px;text-align:center}
+.minimap{height:180px;border-radius:14px;border:1px solid var(--line);cursor:pointer;position:relative;z-index:1}
+.panel label{font-size:11px;color:var(--mut);display:block;margin:10px 0 4px;font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+.panel input[type=date],.panel textarea{
+  width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:12px;
+  background:var(--bg);color:var(--ink);font-size:14px;font-family:inherit;
+}
+.panel textarea{resize:vertical;min-height:54px}
+.photos{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.photos img{width:78px;height:78px;object-fit:cover;border-radius:12px;border:1px solid var(--line);cursor:zoom-in}
+.photos .none{font-size:12.5px;color:var(--mut);padding:4px 0}
+.panel .prow{display:flex;gap:7px;margin-top:13px;flex-wrap:wrap}
+.panel .prow a,.panel .prow button{
+  font-size:12.5px;border:1px solid var(--line);background:var(--card);color:var(--ink);
+  border-radius:999px;padding:7px 12px;cursor:pointer;text-decoration:none;font-weight:600;
+}
+.panel .del{color:var(--red)}
+.flash{animation:flash 1.6s ease 2}
+@keyframes flash{0%,100%{box-shadow:var(--shadow)}50%{box-shadow:0 0 0 4px var(--red)}}
+
+/* ---- journal ---- */
+.jhead{font-family:"Fraunces",Georgia,serif;font-size:24px;font-weight:900;margin:22px 0 4px}
+.jsub{color:var(--mut);font-size:13.5px;margin:0 0 16px}
+.jentry{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px 16px;margin:10px 0;box-shadow:var(--shadow)}
+.jdate{font-size:11.5px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center}
+.jdate::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:8px}
+.jt{font-weight:700;font-size:16.5px;margin-top:5px}
+.jp{font-size:13px;color:var(--mut);margin-top:1px}
+.jnote{font-size:13.5px;margin-top:9px;padding:9px 12px;background:var(--bg);border-radius:12px;white-space:pre-wrap}
+.jentry .photos{margin-top:10px}
+
+.empty{color:var(--mut);text-align:center;padding:44px 0;font-size:14px}
+footer{margin-top:40px;padding:20px 0 34px;border-top:1px solid var(--line);color:var(--mut);font-size:12.5px}
+footer p{margin:6px 0}
+
+/* ---- lightbox ---- */
+#lb{position:fixed;inset:0;background:rgba(12,9,5,.94);z-index:2000;display:none;flex-direction:column;align-items:center;justify-content:center}
+#lb.on{display:flex}
+#lb img{max-width:94vw;max-height:78vh;border-radius:12px;box-shadow:0 12px 44px rgba(0,0,0,.6)}
+#lb .lbrow{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+#lb button{border:1px solid rgba(255,255,255,.32);background:rgba(255,255,255,.09);color:#fff;border-radius:999px;padding:9px 16px;font-size:13.5px;cursor:pointer;font-weight:600}
+#lb .lbdel{border-color:#ff8d84;color:#ff8d84}
+
+/* ---- dialog ---- */
+dialog{border:1px solid var(--line);border-radius:22px;background:var(--card);color:var(--ink);padding:24px;width:min(440px,92vw);box-shadow:var(--shadow-2)}
+dialog::backdrop{background:rgba(15,10,5,.5);backdrop-filter:blur(3px)}
+dialog h3{margin:0 0 12px;font-family:"Fraunces",Georgia,serif;font-weight:900;font-size:21px}
+dialog label{font-size:11px;color:var(--mut);display:block;margin:11px 0 4px;font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+dialog input,dialog select,dialog textarea{
+  width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:12px;
+  background:var(--bg);color:var(--ink);font-size:14px;font-family:inherit;
+}
+dialog .drow{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+dialog .drow button{border-radius:999px;padding:9px 16px;font-size:14px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:600}
+dialog .drow .primary{background:linear-gradient(150deg,var(--red),var(--red2));border-color:transparent;color:#fff}
+
+/* ---- planificateur « Demain ? » ---- */
+.plfrom{display:flex;gap:8px;align-items:center}
+.plfrom select{flex:1;min-width:0}
+.plfrom button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:8px 12px;cursor:pointer;font-size:15px}
+input[type=range]{width:100%;accent-color:var(--red);margin:6px 0 0}
+.plnote{font-size:12px;color:var(--mut);margin:10px 0 4px}
+#plStatus{min-height:16px;margin:0 0 4px}
+#plRes{max-height:42vh;overflow-y:auto;margin-top:4px;border-top:1px solid var(--line)}
+.plrow{display:flex;align-items:center;gap:10px;padding:10px 3px;border-bottom:1px solid var(--line);cursor:pointer}
+.plrow:hover{background:var(--soft)}
+.plrow .plt{flex:1;min-width:0;font-size:14px;font-weight:600}
+.plrow .plt small{display:block;color:var(--mut);font-size:12px;font-weight:400}
+.plrow .pltime{font-weight:700;font-size:13px;color:var(--red);white-space:nowrap}
+.plrow .pltime.real{color:var(--ok)}
+.plempty{font-size:13.5px;color:var(--mut);padding:14px 3px}
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="brand"><span class="cross"></span><h1>Suisse <em>100</em></h1></div>
+    <p class="tag"><b id="tagN">163</b> idées pour découvrir la Suisse profonde à deux, AG en poche — objectif : <b>100 avant l’été 2028</b>.</p>
+    <div class="score"><b id="bigN">0</b><span id="bigTot">/ 163</span></div>
+    <div class="bar"><i id="fill"></i><span class="goalmark" id="goalMark" title="Objectif : 100"></span></div>
+    <p class="pace" id="pace"></p>
+    <svg class="mountains" viewBox="0 0 800 60" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 60 L70 26 L130 46 L210 10 L280 44 L350 22 L420 50 L500 6 L570 40 L640 24 L710 46 L800 14 L800 60 Z" fill="var(--soft)"/>
+      <path d="M0 60 L90 40 L170 54 L260 30 L340 52 L430 34 L520 54 L610 38 L700 52 L800 40 L800 60 Z" fill="var(--line)" opacity=".8"/>
+    </svg>
+  </header>
+
+  <div class="viewseg" id="segView">
+    <button data-v="list" class="on">📋 Liste</button>
+    <button data-v="map">🗺️ Carte</button>
+    <button data-v="journal">📖 Journal</button>
+  </div>
+
+  <div class="toolbar" id="toolbar">
+    <div class="inner">
+      <input id="q" type="search" placeholder="Rechercher (lieu, canton, mot-clé)…">
+      <div class="seg" id="segStatus">
+        <button data-s="all" class="on">Tout</button>
+        <button data-s="todo">À faire</button>
+        <button data-s="done">Faits</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="chips" id="catChips"></div>
+  <div class="chips" id="regChips"></div>
+
+  <div class="actions" id="actionRow">
+    <button class="primary" id="btnPlan">🚆 Demain ?</button>
+    <button id="btnRandom">🎲 Au hasard</button>
+    <button id="btnAdd">＋ Ajouter</button>
+    <button id="btnExport">⬇ Exporter</button>
+    <button id="btnImport">⬆ Importer</button>
+    <input type="file" id="fileImport" accept=".json,application/json" hidden>
+    <input type="file" id="filePhoto" accept="image/*" multiple hidden>
+  </div>
+
+  <div id="map"></div>
+  <p class="maplegend" id="maplegend">Filtres actifs appliqués à la carte ·<span class="dotl" style="background:#d52b1e"></span>à faire<span class="dotl" style="background:#2f7d38"></span>fait</p>
+
+  <main id="list"></main>
+
+  <footer>
+    <p><b>Badges AG</b> : <span class="badge ga-inc">AG ✓</span> transport inclus · <span class="badge ga-red">AG ½</span> réduction (souvent 50 %) · <span class="badge ga-pay">hors AG</span> à payer. Indicatif (état 2026) — vérifiez avant de partir ; certaines entrées de sites restent payantes.</p>
+    <p><b>Photos</b> : elles restent sur cet appareil (stockage du navigateur). Pour les transférer, utilisez « Exporter » avec photos.</p>
+    <p><b>À deux</b> : « Exporter » sur un téléphone, envoyer le fichier, « Importer » sur l’autre — coches, notes et photos fusionnent.</p>
+    <p>Objectif : 100 avant juillet 2028. Bonne route ! 🇨🇭</p>
+  </footer>
+</div>
+
+<div id="lb">
+  <img id="lbimg" alt="">
+  <div class="lbrow">
+    <button id="lbprev">‹ Précédente</button>
+    <button id="lbnext">Suivante ›</button>
+    <button class="lbdel" id="lbdel">🗑 Supprimer</button>
+    <button id="lbclose">✕ Fermer</button>
+  </div>
+</div>
+
+<dialog id="dlgPlan">
+  <h3>🚆 On fait quoi demain ?</h3>
+  <label>Départ</label>
+  <div class="plfrom">
+    <select id="plFrom"></select>
+    <button type="button" id="plGeo" title="Utiliser ma position">📍</button>
+  </div>
+  <label>Trajet max (aller) : <span id="plTlbl">2 h 00</span></label>
+  <input type="range" id="plT" min="30" max="240" step="15" value="120">
+  <p class="plnote">🚆 vert = horaire réel CFF pour demain matin · ≈ rouge = estimation en attendant.</p>
+  <p class="plnote" id="plStatus"></p>
+  <div id="plRes"></div>
+  <div class="drow">
+    <button type="button" id="plRandom">🎲 Surprise</button>
+    <button type="button" id="plClose" class="primary">Fermer</button>
+  </div>
+</dialog>
+
+<dialog id="dlgAdd">
+  <h3>Ajouter une chose</h3>
+  <form method="dialog" id="formAdd">
+    <label>Titre *</label><input id="fT" required maxlength="80" placeholder="p. ex. Marché de Noël de Montreux">
+    <label>Lieu</label><input id="fP" maxlength="60" placeholder="p. ex. Montreux">
+    <label>Canton (sigle)</label><input id="fK" maxlength="2" placeholder="VD" style="text-transform:uppercase">
+    <label>Catégorie</label><select id="fC"></select>
+    <label>Région</label><select id="fR"></select>
+    <label>Description</label><textarea id="fD" maxlength="200" rows="2"></textarea>
+    <div class="drow">
+      <button type="button" id="btnCancel">Annuler</button>
+      <button type="submit" class="primary">Ajouter</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+"use strict";
+
+/* ================= données ================= */
+const CATS = {
+  vil:["🏘️","Villages & vieilles villes"],
+  tra:["🚂","Trains & cars postaux"],
+  som:["⛰️","Sommets & panoramas"],
+  eau:["💧","Lacs, gorges & bains"],
+  ran:["🥾","Randonnées"],
+  fet:["🎭","Fêtes & traditions"],
+  gas:["🧀","Gastronomie"],
+  cul:["🏛️","Culture & musées"],
+  ins:["🎢","Insolite"]
+};
+const REGS = { al:"Alémanique", gr:"Grisons", ti:"Tessin", ro:"Romandie", ch:"Partout" };
+const GA = { inc:["AG ✓","ga-inc"], red:["AG ½","ga-red"], pay:["hors AG","ga-pay"] };
+
+const ITEMS = [
+/* --- Villages & vieilles villes --- */
+{i:1,c:"vil",r:"al",k:"AI",t:"Appenzell",p:"Appenzell",g:"inc",x:[47.331,9.409],d:"Façades peintes et place de la Landsgemeinde, où l’on vote encore à main levée."},
+{i:2,c:"vil",r:"al",k:"SH",t:"Stein am Rhein",p:"Stein am Rhein",g:"inc",x:[47.659,8.860],d:"La petite ville médiévale la mieux conservée du pays, façades à fresques."},
+{i:3,c:"vil",r:"al",k:"SG",t:"Werdenberg",p:"Buchs SG",g:"inc",x:[47.170,9.459],d:"La plus petite ville de Suisse : une ruelle de maisons en bois du XIIIe et un château."},
+{i:4,c:"vil",r:"gr",k:"GR",t:"Guarda",p:"Basse-Engadine",g:"inc",x:[46.772,10.147],d:"Sgraffites engadinois et décor du conte Schellen-Ursli."},
+{i:5,c:"vil",r:"gr",k:"GR",t:"Soglio",p:"Val Bregaglia",g:"inc",x:[46.341,9.538],d:"Balcon du Bregaglia, « seuil du paradis » selon le peintre Segantini. Car postal."},
+{i:6,c:"vil",r:"gr",k:"GR",t:"Poschiavo",p:"Val Poschiavo",g:"inc",x:[46.323,10.058],d:"Palazzi à l’italienne au bout de la ligne de la Bernina."},
+{i:7,c:"vil",r:"ti",k:"TI",t:"Bosco Gurin",p:"Vallemaggia",g:"inc",x:[46.317,8.494],d:"Le village walser germanophone perché du Tessin (1506 m)."},
+{i:8,c:"vil",r:"ti",k:"TI",t:"Corippo",p:"Val Verzasca",g:"inc",x:[46.226,8.842],d:"Hameau de pierre, longtemps la plus petite commune de Suisse."},
+{i:9,c:"vil",r:"al",k:"VS",t:"Ernen",p:"Vallée de Conches",g:"inc",x:[46.399,8.145],d:"« Village de la musique » du Haut-Valais, place aux maisons brunies par le soleil."},
+{i:10,c:"vil",r:"gr",k:"GR",t:"Coire",p:"Chur",g:"inc",x:[46.849,9.533],d:"La plus vieille ville de Suisse — 5000 ans d’histoire au pied des vignes."},
+{i:11,c:"vil",r:"al",k:"SO",t:"Soleure",p:"Solothurn",g:"inc",x:[47.208,7.537],d:"La plus belle ville baroque du pays, obsédée par le chiffre 11."},
+{i:12,c:"vil",r:"al",k:"ZG",t:"Zoug",p:"Zug",g:"inc",x:[47.166,8.516],d:"Vieille ville au bord de l’eau et couchers de soleil réputés les plus beaux de Suisse."},
+{i:13,c:"vil",r:"ro",k:"FR",t:"Morat / Murten",p:"Morat",g:"inc",x:[46.928,7.117],d:"Remparts couverts praticables, ville bilingue posée sur le Röstigraben."},
+{i:14,c:"vil",r:"ro",k:"JU",t:"St-Ursanne",p:"Clos du Doubs",g:"inc",x:[47.365,7.155],d:"Cité médiévale endormie au bord du Doubs, entre trois portes et un pont de pierre."},
+{i:134,c:"vil",r:"al",k:"GL",t:"Braunwald",p:"Glarnerland",g:"red",x:[46.939,8.999],d:"Terrasse sans voitures au-dessus du Linthal, funiculaire rouge et silence."},
+{i:135,c:"vil",r:"ro",k:"FR",t:"Gruyères",p:"Gruyères",g:"inc",x:[46.583,7.083],d:"La cité comtale, son château, la double crème — et le musée Giger pour le contraste."},
+{i:136,c:"vil",r:"ro",k:"VS",t:"Grimentz",p:"Val d’Anniviers",g:"inc",x:[46.179,7.574],d:"Chalets noircis croulant sous les géraniums, au fond de l’Anniviers."},
+{i:137,c:"vil",r:"gr",k:"GR",t:"Splügen",p:"Rheinwald",g:"inc",x:[46.550,9.322],d:"Village-étape historique des cols, maisons walser et palais de muletiers."},
+{i:138,c:"vil",r:"ro",k:"VD",t:"Romainmôtier",p:"Vallon du Nozon",g:"inc",x:[46.693,6.460],d:"La plus ancienne abbatiale romane de Suisse, dans un vallon hors du temps."},
+
+/* --- Trains & cars postaux --- */
+{i:15,c:"tra",r:"gr",k:"GR",t:"Ligne de la Bernina",p:"St. Moritz → Tirano",g:"inc",x:[46.410,10.022],d:"UNESCO : 2253 m franchis sans crémaillère. Pause obligatoire à Alp Grüm. Le train régional suffit."},
+{i:16,c:"tra",r:"gr",k:"GR",t:"Ligne de l’Albula",p:"Coire → St. Moritz",g:"inc",x:[46.681,9.676],d:"UNESCO : viaduc de Landwasser et tunnels hélicoïdaux au-dessus de Bergün."},
+{i:17,c:"tra",r:"gr",k:"VS",t:"Glacier Express",p:"Zermatt → St. Moritz",g:"inc",x:[46.660,8.671],d:"« L’express le plus lent du monde » : 8 h, 291 ponts. AG valable mais réservation payante — ou le même trajet en trains régionaux, sans supplément."},
+{i:18,c:"tra",r:"ch",k:"VD",t:"GoldenPass Express",p:"Montreux → Interlaken",g:"inc",x:[46.555,7.373],d:"Léman, Pays-d’Enhaut, Gstaad, Simmental — changement d’écartement en marche à Zweisimmen."},
+{i:19,c:"tra",r:"ti",k:"TI",t:"Centovalli",p:"Locarno → Domodossola",g:"inc",x:[46.177,8.700],d:"« Cent vallées » : viaducs au-dessus du vide et villages suspendus. AG valable côté suisse."},
+{i:20,c:"tra",r:"al",k:"UR",t:"Ancienne ligne du Gothard",p:"Erstfeld → Bellinzone",g:"inc",x:[46.706,8.599],d:"Les boucles mythiques : on voit l’église de Wassen trois fois. Prendre le régional, pas le tunnel de base."},
+{i:21,c:"tra",r:"al",k:"VS",t:"Lötschberger, rampe sud",p:"Berne → Brigue via Goppenstein",g:"inc",x:[46.322,7.790],d:"La ligne en balcon au-dessus de la vallée du Rhône."},
+{i:22,c:"tra",r:"al",k:"UR",t:"Vapeur de la Furka (DFB)",p:"Realp → Oberwald",g:"pay",x:[46.598,8.503],d:"La ligne de légende ressuscitée par des bénévoles : crémaillère, charbon et fumée (été)."},
+{i:23,c:"tra",r:"al",k:"LU",t:"Rigi en crémaillère",p:"Vitznau / Arth-Goldau",g:"inc",x:[47.056,8.485],d:"La « reine des montagnes », plus ancien train de montagne d’Europe (1871) — inclus dans l’AG !"},
+{i:24,c:"tra",r:"al",k:"LU",t:"Pilatus",p:"Alpnachstad",g:"red",x:[46.979,8.255],d:"La crémaillère la plus raide du monde : 48 % de pente."},
+{i:25,c:"tra",r:"al",k:"BE",t:"Brienz Rothorn à vapeur",p:"Brienz",g:"red",x:[46.787,8.047],d:"Vapeur, suie et vue plongeante sur le turquoise du lac de Brienz."},
+{i:26,c:"tra",r:"al",k:"SZ",t:"Funiculaire de Stoos",p:"Schwyz",g:"red",x:[46.977,8.665],d:"Le funiculaire le plus raide du monde (110 %), cabines-tonneaux qui pivotent."},
+{i:27,c:"tra",r:"al",k:"NW",t:"Stanserhorn CabriO",p:"Stans",g:"red",x:[46.928,8.339],d:"Téléphérique décapotable : pont supérieur à ciel ouvert."},
+{i:28,c:"tra",r:"al",k:"BE",t:"Cols en car postal",p:"Grimsel · Furka · Susten",g:"inc",x:[46.561,8.337],d:"Trois cols mythiques en car jaune, klaxon à trois tons dans les épingles (été)."},
+{i:139,c:"tra",r:"al",k:"SH",t:"Croisière du Haut-Rhin",p:"Schaffhouse → Stein am Rhein",g:"inc",x:[47.689,8.749],d:"La plus belle croisière fluviale du pays, entre rives boisées et bourgs médiévaux."},
+
+/* --- Sommets & panoramas --- */
+{i:29,c:"som",r:"al",k:"AI",t:"Ebenalp & Äscher",p:"Wasserauen",g:"red",x:[47.284,9.414],d:"L’auberge collée à la falaise et la grotte-ermitage de Wildkirchli."},
+{i:30,c:"som",r:"al",k:"AR",t:"Säntis",p:"Schwägalp",g:"red",x:[47.249,9.343],d:"Le toit de la Suisse orientale : six pays visibles par temps clair."},
+{i:31,c:"som",r:"al",k:"BE",t:"Schilthorn – Piz Gloria",p:"Mürren",g:"red",x:[46.557,7.835],d:"Le sommet de James Bond (1969), restaurant tournant à 2970 m."},
+{i:32,c:"som",r:"al",k:"BE",t:"Jungfraujoch",p:"Grindelwald / Wengen",g:"red",x:[46.547,7.981],d:"La plus haute gare d’Europe (3454 m). Cher même avec l’AG — par grand beau uniquement !"},
+{i:33,c:"som",r:"al",k:"VS",t:"Gornergrat",p:"Zermatt",g:"red",x:[45.983,7.784],d:"Face au Cervin et à 29 sommets de plus de 4000 m."},
+{i:34,c:"som",r:"al",k:"VS",t:"Glacier d’Aletsch",p:"Bettmeralp / Riederalp",g:"red",x:[46.398,8.068],d:"20 km de glace (UNESCO) depuis Moosfluh, et des villages sans voitures."},
+{i:35,c:"som",r:"al",k:"BE",t:"Niesen",p:"Mülenen",g:"red",x:[46.645,7.652],d:"La « pyramide suisse » et son funiculaire de 1910."},
+{i:36,c:"som",r:"gr",k:"GR",t:"Muottas Muragl",p:"Samedan / Pontresina",g:"red",x:[46.508,9.913],d:"Le balcon classique sur les lacs de Haute-Engadine."},
+{i:37,c:"som",r:"ti",k:"TI",t:"Monte Generoso",p:"Capolago",g:"red",x:[45.929,9.019],d:"La « Fleur de pierre » de Mario Botta au-dessus du lac de Lugano."},
+{i:38,c:"som",r:"al",k:"AI",t:"Hoher Kasten",p:"Brülisau",g:"red",x:[47.285,9.463],d:"Restaurant tournant et jardin alpin au-dessus de la vallée du Rhin."},
+{i:39,c:"som",r:"ro",k:"NE",t:"Creux du Van",p:"Noiraigue",g:"inc",x:[46.932,6.727],d:"Cirque rocheux de 160 m de haut ; bouquetins au lever du jour."},
+{i:120,c:"som",r:"al",k:"BE",t:"Schynige Platte",p:"Wilderswil",g:"red",x:[46.636,7.909],d:"Train de 1893, jardin botanique alpin et LA vue carte postale sur Eiger-Mönch-Jungfrau."},
+{i:121,c:"som",r:"ro",k:"BE",t:"Chasseral",p:"Jura bernois",g:"inc",x:[47.133,7.059],d:"Le balcon du Jura : toute la chaîne des Alpes, du Säntis au Mont-Blanc (car postal l’été)."},
+{i:122,c:"som",r:"ro",k:"VD",t:"Peak Walk, Glacier 3000",p:"Les Diablerets",g:"red",x:[46.331,7.211],d:"Le seul pont suspendu du monde reliant deux sommets."},
+
+/* --- Lacs, gorges & bains --- */
+{i:40,c:"eau",r:"al",k:"SH",t:"Chutes du Rhin",p:"Neuhausen",g:"inc",x:[47.678,8.615],d:"La chute la plus puissante d’Europe ; bateau jusqu’au rocher central."},
+{i:41,c:"eau",r:"al",k:"BE",t:"Oeschinensee",p:"Kandersteg",g:"red",x:[46.498,7.727],d:"Amphithéâtre turquoise sous la Blüemlisalp ; luge d’été en prime."},
+{i:42,c:"eau",r:"al",k:"BE",t:"Blausee",p:"Kandergrund",g:"inc",x:[46.532,7.665],d:"Minuscule lac d’un bleu irréel (entrée payante), passerelles et barques dans la forêt."},
+{i:43,c:"eau",r:"gr",k:"GR",t:"Caumasee",p:"Flims",g:"inc",x:[46.827,9.297],d:"La « Caraïbe grisonne » cachée dans la forêt de Flims."},
+{i:44,c:"eau",r:"al",k:"AI",t:"Seealpsee",p:"Wasserauen",g:"inc",x:[47.268,9.401],d:"Le miroir de l’Alpstein, à une heure de marche de Wasserauen."},
+{i:45,c:"eau",r:"gr",k:"GR",t:"Lac de Sils",p:"Sils / Segl",g:"inc",x:[46.421,9.740],d:"La presqu’île Chastè chère à Nietzsche ; service de bateau le plus haut d’Europe (été)."},
+{i:46,c:"eau",r:"al",k:"BE",t:"Lauterbrunnen",p:"Lauterbrunnen",g:"inc",x:[46.593,7.909],d:"72 cascades dont le Staubbach et les Trümmelbach souterraines (entrée payante) — la vallée qui a inspiré Tolkien."},
+{i:47,c:"eau",r:"al",k:"BE",t:"Giessbach",p:"Lac de Brienz",g:"inc",x:[46.734,8.024],d:"Cascades, palace Belle Époque et plus vieux funiculaire touristique d’Europe (1879)."},
+{i:48,c:"eau",r:"ti",k:"TI",t:"Cascade de Foroglio",p:"Val Bavona",g:"inc",x:[46.348,8.582],d:"110 m de chute au-dessus d’un hameau de pierre. Car postal au bout du monde."},
+{i:49,c:"eau",r:"ti",k:"TI",t:"Val Verzasca",p:"Lavertezzo",g:"inc",x:[46.259,8.837],d:"Eau émeraude, dalles polies et le pont « romain » à deux arches."},
+{i:50,c:"eau",r:"al",k:"BE",t:"Gorges de l’Aar",p:"Meiringen",g:"inc",x:[46.720,8.223],d:"Passerelles accrochées dans une fente de 1,4 km (entrée payante)."},
+{i:51,c:"eau",r:"gr",k:"GR",t:"Viamala",p:"Thusis",g:"inc",x:[46.660,9.446],d:"Le « mauvais chemin » qui terrorisait les voyageurs vers les cols ; 359 marches (entrée payante)."},
+{i:52,c:"eau",r:"al",k:"UR",t:"Gorges de Schöllenen",p:"Andermatt",g:"inc",x:[46.647,8.590],d:"Le pont du Diable et la légende fondatrice du Gothard."},
+{i:53,c:"eau",r:"gr",k:"GR",t:"Thermes de Vals",p:"Vals",g:"inc",x:[46.616,9.180],d:"Les bains en quartzite de Peter Zumthor, chef-d’œuvre d’architecture (réserver)."},
+{i:54,c:"eau",r:"al",k:"BE",t:"Île St-Pierre",p:"Lac de Bienne",g:"inc",x:[47.063,7.135],d:"La presqu’île de Rousseau — « les plus heureux jours de ma vie » — à pied depuis Erlach ou en bateau."},
+{i:101,c:"eau",r:"al",k:"GL",t:"Klöntalersee",p:"Klöntal",g:"inc",x:[47.023,8.966],d:"Le « fjord » glaronnais : lac encaissé entre parois verticales, baignade et grillades."},
+{i:102,c:"eau",r:"al",k:"UR",t:"Arnisee",p:"Amsteg / Intschi",g:"red",x:[46.837,8.653],d:"Petit lac au-dessus de la Reuss, deux téléphériques rustiques, place de feu."},
+{i:103,c:"eau",r:"al",k:"UR",t:"Golzernsee",p:"Maderanertal",g:"red",x:[46.809,8.760],d:"Le joyau caché du Maderanertal : téléphérique puis 30 min à pied, baignade sauvage."},
+{i:104,c:"eau",r:"al",k:"OW",t:"Melchsee-Frutt",p:"Kerns",g:"red",x:[46.773,8.265],d:"Plateau sans voitures à 1920 m, deux lacs, tour quasi plat — fondue en télécabine possible."},
+{i:105,c:"eau",r:"al",k:"OW",t:"Trübsee",p:"Engelberg",g:"red",x:[46.794,8.399],d:"Lac sous le Titlis : tour du lac plat, barques gratuites l’été."},
+{i:106,c:"eau",r:"al",k:"BE",t:"Engstlensee",p:"Gental",g:"inc",x:[46.775,8.352],d:"Car postal jusqu’à l’un des plus beaux alpages de Suisse, lac poissonneux."},
+{i:107,c:"eau",r:"gr",k:"GR",t:"Lai da Palpuogna",p:"Col de l’Albula",g:"inc",x:[46.584,9.755],d:"Élu plus bel endroit de Suisse en 2007 — mélèzes, eau noire, car postal."},
+{i:108,c:"eau",r:"ro",k:"VS",t:"Lac de Taney",p:"Vouvry",g:"inc",x:[46.348,6.836],d:"Vallon suspendu au-dessus du Léman, hameau sans route (1 h 15 de montée)."},
+{i:109,c:"eau",r:"al",k:"BE",t:"Lauenensee",p:"Saanenland",g:"inc",x:[46.399,7.321],d:"Marais et miroirs d’eau au fond du Saanenland — une chanson culte lui est dédiée."},
+{i:110,c:"eau",r:"gr",k:"GR",t:"Bains de Scuol",p:"Basse-Engadine",g:"inc",x:[46.797,10.305],d:"Bains romano-irlandais, puis balade dans les villages à sgraffites de Sent et Ftan."},
+{i:111,c:"eau",r:"ro",k:"VD",t:"Grottes de Vallorbe",p:"Vallorbe",g:"inc",x:[46.727,6.367],d:"Les plus belles grottes de Suisse, sur le cours souterrain de l’Orbe (entrée payante)."},
+
+/* --- Randonnées --- */
+{i:55,c:"ran",r:"al",k:"SZ",t:"Crête de Stoos",p:"Klingenstock → Fronalpstock",g:"red",x:[46.967,8.660],d:"Arête panoramique au-dessus du lac d’Uri (2–3 h)."},
+{i:56,c:"ran",r:"al",k:"SG",t:"Pizol, tour des 5 lacs",p:"Bad Ragaz / Wangs",g:"red",x:[46.958,9.396],d:"La plus belle randonnée de lacs alpins de Suisse (4–5 h, juillet–octobre)."},
+{i:57,c:"ran",r:"al",k:"BE",t:"First : Cliff Walk & Bachalpsee",p:"Grindelwald",g:"red",x:[46.659,8.053],d:"Passerelle au-dessus du vide puis lac-miroir face aux Schreckhörner (2 h)."},
+{i:58,c:"ran",r:"al",k:"VS",t:"Passage de la Gemmi",p:"Leukerbad → Kandersteg",g:"red",x:[46.399,7.615],d:"Le chemin historique dans la paroi ; thermes de Loèche-les-Bains à la clé."},
+{i:59,c:"ran",r:"gr",k:"GR",t:"Ruinaulta",p:"Flims / Versam",g:"inc",x:[46.826,9.300],d:"Le « Grand Canyon suisse » : à pied, en train régional ou en rafting."},
+{i:60,c:"ran",r:"al",k:"BE",t:"Napf",p:"Emmental",g:"inc",x:[47.005,7.940],d:"Le cœur inaccessible de l’Emmental : aucune route, panorama des Alpes au Jura (3–4 h)."},
+{i:112,c:"ran",r:"gr",k:"GR",t:"Val Fex",p:"Sils / Segl",g:"inc",x:[46.396,9.753],d:"La vallée sans voitures derrière Sils : fond plat, calèches, hameaux romanches."},
+{i:113,c:"ran",r:"gr",k:"GR",t:"Val Roseg",p:"Pontresina",g:"inc",x:[46.446,9.864],d:"Fond de vallée plat jusqu’au cirque glaciaire — à pied, en calèche, ou à ski de fond l’hiver."},
+{i:114,c:"ran",r:"ro",k:"VD",t:"Terrasses de Lavaux",p:"Lutry → St-Saphorin",g:"inc",x:[46.493,6.750],d:"Entre vignes UNESCO et Léman, quasi plat, de village vigneron en village vigneron."},
+{i:115,c:"ran",r:"ro",k:"NE",t:"Gorges de l’Areuse",p:"Noiraigue → Boudry",g:"inc",x:[46.945,6.746],d:"Passerelles romantiques le long de la rivière, en pente douce — le pont de carte postale."},
+{i:116,c:"ran",r:"al",k:"ZH",t:"Uetliberg → Felsenegg",p:"Zurich",g:"inc",x:[47.351,8.490],d:"Le « chemin des planètes » en crête plate au-dessus de Zurich, funiculaire au retour."},
+{i:117,c:"ran",r:"al",k:"BE",t:"Grütschalp → Mürren",p:"Lauterbrunnen",g:"inc",x:[46.578,7.892],d:"Sentier-balcon plat face à Eiger, Mönch et Jungfrau, entre deux trains."},
+{i:118,c:"ran",r:"ro",k:"VS",t:"Un bisse valaisan",p:"Nendaz ou Savièse",g:"inc",x:[46.188,7.305],d:"Suivre l’eau à flanc de coteau le long des canaux historiques — les sentiers les plus plats des Alpes."},
+{i:119,c:"ran",r:"al",k:"NW",t:"Felsenweg du Bürgenstock",p:"Bürgenstock",g:"red",x:[46.997,8.380],d:"Sentier taillé dans la falaise au-dessus du lac + le plus haut ascenseur extérieur d’Europe."},
+
+/* --- Fêtes & traditions --- */
+{i:61,c:"fet",r:"al",k:"BS",t:"Morgestraich – Fasnacht de Bâle",p:"Bâle",x:[47.558,7.588],d:"Lundi 4 h du matin : la ville s’éteint, les lanternes s’allument, piccolos et tambours (UNESCO). Février–mars."},
+{i:62,c:"fet",r:"al",k:"ZH",t:"Sechseläuten",p:"Zurich",x:[47.366,8.545],d:"On brûle le Böögg : plus sa tête explose vite, plus l’été sera beau (3e lundi d’avril)."},
+{i:63,c:"fet",r:"al",k:"SZ",t:"Klausjagen",p:"Küssnacht am Rigi",x:[47.085,8.442],d:"5 décembre : 200 mitres-vitraux illuminées de 2 m, cors et fouets."},
+{i:64,c:"fet",r:"al",k:"AR",t:"Silvesterchlausen",p:"Urnäsch",x:[47.317,9.279],d:"Nouvel an julien (13 janvier) : Chläuse masqués qui yodlent de ferme en ferme dans la neige."},
+{i:65,c:"fet",r:"al",k:"VS",t:"Tschäggättä",p:"Lötschental",x:[46.403,7.784],d:"Masques effrayants sculptés et fourrures — le carnaval païen du Lötschental (février)."},
+{i:66,c:"fet",r:"al",k:"AR",t:"Désalpe / Alpabzug",p:"Urnäsch, Charmey ou Entlebuch",x:[47.320,9.283],d:"Fin septembre : troupeaux couronnés de fleurs, sonnailles et cortèges."},
+{i:67,c:"fet",r:"ch",k:"CH",t:"Fête de lutte suisse",p:"Schwingfest, selon calendrier",x:[46.800,8.230],d:"Sciure, culottes de jute et taureau en prix — la Suisse profonde à l’état pur (été)."},
+{i:68,c:"fet",r:"al",k:"BE",t:"Match de Hornussen",p:"Emmental",x:[47.030,7.740],d:"Le sport paysan : projeter un palet à 300 m, l’arrêter avec des panneaux de bois."},
+{i:69,c:"fet",r:"ro",k:"VS",t:"Combat de reines",p:"Aproz",x:[46.213,7.305],d:"Les vaches d’Hérens s’affrontent comme à l’alpage ; finale nationale en mai."},
+{i:70,c:"fet",r:"al",k:"BE",t:"Zibelemärit",p:"Berne",x:[46.950,7.440],d:"4e lundi de novembre, dès 5 h : 50 tonnes d’oignons tressés et batailles de confettis."},
+{i:71,c:"fet",r:"al",k:"SG",t:"OLMA",p:"St-Gall",x:[47.428,9.377],d:"La grande foire agricole d’octobre : courses de porcelets, halles à bétail, ambiance."},
+{i:72,c:"fet",r:"ch",k:"CH",t:"1er Août à la ferme",p:"partout",x:[46.770,8.190],d:"Brunch fermier au petit matin, feux d’artifice sur les hauteurs le soir."},
+{i:140,c:"fet",r:"al",k:"BS",t:"Marché de Noël de Bâle",p:"Barfüsserplatz",x:[47.556,7.590],d:"Le plus grand marché de Noël de Suisse, ruelles illuminées (fin nov.–déc.)."},
+{i:141,c:"fet",r:"al",k:"GL",t:"Landsgemeinde de Glaris",p:"Glaris",x:[47.040,9.068],d:"La démocratie à l’état brut : tout un canton vote à main levée sur la place (1er dimanche de mai)."},
+{i:142,c:"fet",r:"ti",k:"TI",t:"Hockey à Ambrì",p:"Gottardo Arena, Ambrì-Piotta",x:[46.512,8.689],d:"Le club de village mythique de la Leventina — ambiance unique en Suisse (sept.–mars)."},
+
+/* --- Gastronomie --- */
+{i:73,c:"gas",r:"al",k:"BE",t:"Meringues du Kemmeriboden-Bad",p:"Schangnau",g:"inc",x:[46.777,7.909],d:"Meringues géantes à la double crème, au fond de l’Emmental — car postal compris."},
+{i:74,c:"gas",r:"al",k:"AR",t:"Fromagerie d’Appenzell",p:"Stein AR",x:[47.373,9.345],d:"Percer (ou pas) le secret de la saumure aux herbes à la fromagerie de démonstration."},
+{i:75,c:"gas",r:"ro",k:"FR",t:"Maison Cailler",p:"Broc",x:[46.604,7.101],d:"La plus ancienne marque de chocolat du pays, dégustation à volonté en fin de visite."},
+{i:76,c:"gas",r:"al",k:"BE",t:"Kambly",p:"Trubschachen",x:[46.923,7.845],d:"Biscuits à volonté et fours de démonstration — le pèlerinage emmentalois."},
+{i:77,c:"gas",r:"al",k:"BE",t:"Gelateria di Berna",p:"Berne",x:[46.938,7.442],d:"La glace artisanale culte du quartier du Marzili — la file d’attente fait partie de l’expérience (été)."},
+{i:78,c:"gas",r:"al",k:"ZH",t:"Luxemburgerli de Sprüngli",p:"Paradeplatz, Zurich",x:[47.370,8.539],d:"Les macarons aériens de la Paradeplatz, institution zurichoise depuis 1836."},
+{i:79,c:"gas",r:"gr",k:"GR",t:"Bündner Nusstorte",p:"Engadine",x:[46.602,9.959],d:"La tourte aux noix caramélisées, achetée sur place — pas au supermarché."},
+{i:80,c:"gas",r:"ti",k:"TI",t:"Grotto tessinois",p:"vallées du Tessin",x:[46.200,8.780],d:"Polenta au feu de bois, formaggini et gazosa bien fraîche sous la pergola — souvent cash only."},
+{i:81,c:"gas",r:"ro",k:"VS",t:"Raclette au feu de bois",p:"Valais",x:[46.200,7.550],d:"Fromage d’alpage AOP raclé à la braise dans un mayen."},
+{i:82,c:"gas",r:"al",k:"AG",t:"Rüeblitorte d’Argovie",p:"Aarau",x:[47.392,8.045],d:"Le gâteau aux carottes national dans son canton d’origine — et les pignons peints de la vieille ville."},
+{i:143,c:"gas",r:"ro",k:"FR",t:"Cuchaule & moutarde de Bénichon",p:"pays de Fribourg",x:[46.806,7.162],d:"Le pain safrané AOP, sa confiture de moutarde douce-épicée et les poires à botzi (sept.–oct.)."},
+{i:144,c:"gas",r:"ti",k:"TI",t:"Castagnata d’Ascona",p:"Lac Majeur",x:[46.154,8.770],d:"Châtaignes grillées, marrons chauds et douceurs au bord du lac (octobre)."},
+{i:145,c:"gas",r:"al",k:"TG",t:"Hüppen de Gottlieben",p:"Gottlieben",g:"inc",x:[47.664,9.126],d:"Rouleaux croustillants fourrés au chocolat, dans un village de conte au bord de l’Untersee."},
+
+/* --- Culture & musées --- */
+{i:83,c:"cul",r:"al",k:"SG",t:"Bibliothèque de l’abbaye de St-Gall",p:"St-Gall",x:[47.423,9.377],d:"La plus belle salle rococo du monde, manuscrits millénaires, pantoufles obligatoires (UNESCO)."},
+{i:84,c:"cul",r:"gr",k:"GR",t:"Couvent de Müstair",p:"Val Müstair",g:"inc",x:[46.630,10.448],d:"Fresques carolingiennes de l’an 800 au fond du Val Müstair (UNESCO)."},
+{i:85,c:"cul",r:"al",k:"SZ",t:"Abbaye d’Einsiedeln",p:"Einsiedeln",g:"inc",x:[47.126,8.752],d:"La Vierge noire et la grande place de pèlerinage baroque."},
+{i:86,c:"cul",r:"al",k:"BE",t:"Ballenberg",p:"Brienz",x:[46.751,8.083],d:"Une centaine de bâtiments ruraux remontés pièce par pièce, artisans à l’œuvre."},
+{i:87,c:"cul",r:"al",k:"LU",t:"Musée suisse des transports",p:"Lucerne",x:[47.053,8.336],d:"Le musée le plus visité du pays : locos, avions, planétarium."},
+{i:88,c:"cul",r:"al",k:"UR",t:"Grütli en bateau à vapeur",p:"Lac des Quatre-Cantons",g:"inc",x:[46.969,8.594],d:"Traversée du lac d’Uri en vapeur 1900 jusqu’à la prairie du serment de 1291."},
+{i:89,c:"cul",r:"ro",k:"VD",t:"Château de Chillon",p:"Veytaux",g:"inc",x:[46.414,6.927],d:"Le monument le plus visité de Suisse, les pieds dans le Léman ; cachot chanté par Byron."},
+{i:90,c:"cul",r:"al",k:"BE",t:"Berne : Zytglogge & arcades",p:"Berne",g:"inc",x:[46.948,7.448],d:"6 km d’arcades (UNESCO), l’horloge astronomique et la maison d’Einstein."},
+{i:91,c:"cul",r:"ti",k:"TI",t:"Sasso San Gottardo",p:"Col du Gothard",x:[46.556,8.567],d:"La forteresse secrète du Réduit national, creusée dans le granit du col."},
+{i:123,c:"cul",r:"al",k:"BS",t:"Fondation Beyeler",p:"Riehen",x:[47.589,7.651],d:"Monet, Rothko et Giacometti dans l’écrin de Renzo Piano, parc compris."},
+{i:124,c:"cul",r:"al",k:"ZH",t:"Kunsthaus de Zurich",p:"Zurich",x:[47.370,8.548],d:"La plus grande collection d’art de Suisse, extension de Chipperfield."},
+{i:125,c:"cul",r:"al",k:"BE",t:"Zentrum Paul Klee",p:"Berne",x:[46.949,7.474],d:"Les trois vagues de Renzo Piano et 4000 œuvres de Klee."},
+{i:126,c:"cul",r:"al",k:"ZH",t:"Technorama",p:"Winterthour",x:[47.502,8.748],d:"500 expériences à toucher — le musée où l’on a le droit de tout essayer."},
+{i:127,c:"cul",r:"ro",k:"GE",t:"CERN",p:"Meyrin",x:[46.233,6.056],d:"Le berceau du web et le plus grand accélérateur du monde — Portail de la science, gratuit."},
+{i:128,c:"cul",r:"ro",k:"NE",t:"La Chaux-de-Fonds",p:"Montagnes neuchâteloises",g:"inc",x:[47.099,6.825],d:"Urbanisme horloger UNESCO et Musée international d’horlogerie."},
+{i:129,c:"cul",r:"ti",k:"TI",t:"Châteaux de Bellinzone",p:"Bellinzone",g:"inc",x:[46.192,9.022],d:"Trois châteaux médiévaux UNESCO qui verrouillaient la route du Gothard."},
+{i:130,c:"cul",r:"al",k:"BL",t:"Augusta Raurica",p:"Augst",x:[47.534,7.720],d:"Le plus grand théâtre romain au nord des Alpes, ville antique à ciel ouvert."},
+{i:131,c:"cul",r:"ro",k:"VD",t:"Musée Olympique & Ouchy",p:"Lausanne",x:[46.509,6.634],d:"Lausanne capitale olympique : musée, quais et flamme."},
+{i:132,c:"cul",r:"ro",k:"VD",t:"Chaplin’s World",p:"Corsier-sur-Vevey",x:[46.478,6.842],d:"Le manoir de Charlot au-dessus de Vevey, hollywoodien et émouvant."},
+{i:133,c:"cul",r:"al",k:"ZH",t:"Musée national suisse",p:"Zurich",x:[47.379,8.540],d:"Le château-musée face à la gare : toute l’histoire suisse sous un toit."},
+
+/* --- Insolite --- */
+{i:92,c:"ins",r:"al",k:"VS",t:"Pont suspendu Charles Kuonen",p:"Randa",g:"inc",x:[46.106,7.771],d:"494 m suspendus au-dessus de la vallée — le plus long pont piéton des Alpes."},
+{i:93,c:"ins",r:"al",k:"BE",t:"Gelmerbahn",p:"Handegg (Grimsel)",g:"pay",x:[46.608,8.322],d:"Funiculaire ouvert à 106 % : des montagnes russes lentes vers un lac de barrage."},
+{i:94,c:"ins",r:"ro",k:"VS",t:"Grande Dixence",p:"Val d’Hérémence",x:[46.081,7.404],d:"Le plus haut barrage-poids du monde : 285 m de béton au fond du val des Dix."},
+{i:95,c:"ins",r:"ti",k:"TI",t:"Barrage de la Verzasca",p:"Contra",x:[46.183,8.852],d:"Le saut d’ouverture de GoldenEye : à contempler — ou à sauter à l’élastique (220 m)."},
+{i:96,c:"ins",r:"al",k:"ZH",t:"Blindekuh",p:"Zurich",x:[47.363,8.552],d:"Le premier restaurant dans le noir absolu du monde, servi par des non-voyants."},
+{i:97,c:"ins",r:"al",k:"BE",t:"Baignade urbaine",p:"Berne / Bâle",x:[46.942,7.446],d:"Descendre l’Aar au Marzili, ou le Rhin à Bâle avec son Wickelfisch (été)."},
+{i:98,c:"ins",r:"gr",k:"GR",t:"Luge nocturne Preda–Bergün",p:"Bergün",g:"inc",x:[46.632,9.746],d:"6 km de route enneigée éclairée, remontée en train RhB (hiver). Location sur place."},
+{i:99,c:"ins",r:"gr",k:"GR",t:"Juf en car postal",p:"Vallée d’Avers",g:"inc",x:[46.446,9.578],d:"Le plus haut village habité à l’année d’Europe (2126 m), au bout de la ligne."},
+{i:100,c:"ins",r:"ch",k:"CH",t:"Nuit en cabane CAS",p:"à choisir",x:[46.550,8.400],d:"Dortoir, Älplermagronen et lever du soleil sur les glaciers — réserver tôt."},
+{i:146,c:"ins",r:"gr",k:"GR",t:"Heididorf",p:"Maienfeld",g:"inc",x:[47.005,9.531],d:"Kitsch assumé : le village de Heidi et les vignes de la Bündner Herrschaft."},
+{i:147,c:"ins",r:"ch",k:"CH",t:"Nuit dans la paille",p:"une ferme, quelque part",x:[46.950,7.650],d:"Dormir sur la paille dans une ferme (mai–oct.), réveil au chant du coq."},
+{i:148,c:"ins",r:"al",k:"LU",t:"Trottinette de la Marbachegg",p:"Marbach, Entlebuch",g:"red",x:[46.847,7.985],d:"Descente en trottinette tout-terrain dans la biosphère UNESCO de l’Entlebuch."},
+
+/* --- Franches-Montagnes & grandes villes (v3) --- */
+{i:149,c:"eau",r:"ro",k:"JU",t:"Étang de la Gruère",p:"Franches-Montagnes",g:"inc",x:[47.239,7.049],d:"Tourbière mystique aux eaux noires, tour plat sur caillebotis — le joyau des Franches-Montagnes."},
+{i:150,c:"fet",r:"ro",k:"JU",t:"Marché-Concours de Saignelégier",p:"Saignelégier",g:"inc",x:[47.256,6.996],d:"La grande fête du cheval des Franches-Montagnes : courses sans selle et cortège (2e week-end d’août)."},
+{i:151,c:"ran",r:"ro",k:"JU",t:"Le Doubs, de Goumois au Theusseret",p:"Goumois",g:"inc",x:[47.271,6.946],d:"Rive sauvage et plate le long de la rivière, martins-pêcheurs en prime."},
+{i:152,c:"tra",r:"ro",k:"JU",t:"Chemins de fer du Jura",p:"La Chaux-de-Fonds → Glovelier",g:"inc",x:[47.245,7.030],d:"Le petit train rouge qui se faufile entre pâturages boisés et chevaux en liberté."},
+{i:153,c:"vil",r:"ti",k:"TI",t:"Gandria",p:"Lac de Lugano",g:"inc",x:[46.004,8.999],d:"Ruelles à fleur d’eau et sentier de l’olivier — on y va à pied ou en bateau depuis Lugano."},
+{i:154,c:"vil",r:"al",k:"LU",t:"Lucerne : Kapellbrücke & Lion",p:"Lucerne",g:"inc",x:[47.052,8.308],d:"Le pont de bois de 1333 et le Lion mourant, « la pierre la plus émouvante du monde » selon Mark Twain."},
+{i:155,c:"vil",r:"al",k:"ZH",t:"Zurich : Lindenhof & Fraumünster",p:"Zurich",g:"inc",x:[47.371,8.541],d:"La terrasse romaine au-dessus de la Limmat et les vitraux de Chagall."},
+{i:156,c:"vil",r:"al",k:"BS",t:"Bâle : vieille ville & Fähri",p:"Bâle",g:"inc",x:[47.559,7.592],d:"Le Münster rouge, les ruelles médiévales, et la traversée du Rhin en bac à câble silencieux."},
+{i:157,c:"vil",r:"ro",k:"FR",t:"Fribourg : basse-ville & funiculaire",p:"Fribourg",g:"inc",x:[46.803,7.161],d:"Ponts, remparts, et le dernier funiculaire d’Europe à eaux usées (1899) — il sent un peu, oui."},
+{i:158,c:"cul",r:"ro",k:"GE",t:"Genève : jet d’eau & Palais des Nations",p:"Genève",g:"inc",x:[46.207,6.156],d:"140 m d’eau, la vieille ville de Calvin et le siège européen de l’ONU."},
+{i:159,c:"cul",r:"ro",k:"VD",t:"Le guet de Lausanne",p:"Cathédrale de Lausanne",g:"inc",x:[46.522,6.635],d:"Chaque nuit depuis 1405, il crie l’heure du haut du beffroi (22 h–2 h) — montez l’écouter."},
+{i:160,c:"cul",r:"ro",k:"NE",t:"Automates Jaquet-Droz",p:"Neuchâtel",x:[46.991,6.929],d:"Trois androïdes de 1774 qui écrivent, dessinent et respirent — démonstration le 1er dimanche du mois."},
+{i:161,c:"gas",r:"al",k:"ZH",t:"Lindt Home of Chocolate",p:"Kilchberg",g:"inc",x:[47.321,8.544],d:"La plus grande fontaine de chocolat du monde (9 m) et dégustation à volonté."},
+{i:162,c:"gas",r:"ro",k:"BE",t:"Tête de Moine à Bellelay",p:"Abbatiale de Bellelay",g:"inc",x:[47.264,7.165],d:"Le fromage en rosettes dégusté là où les moines l’ont inventé, girolle en main."},
+{i:163,c:"gas",r:"al",k:"ZH",t:"Hiltl",p:"Zurich",x:[47.374,8.534],d:"Le plus ancien restaurant végétarien du monde (1898, au Guinness) — buffet légendaire."}
+];
+
+/* ================= état ================= */
+const KEY = "suisse100_v1";
+const START = new Date("2026-07-16"), END = new Date("2028-07-16"), GOAL = 100;
+let state = { done:{}, notes:{}, custom:[], hidden:[] };
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && typeof s === "object") state = Object.assign(state, s); } catch(e){}
+const save = () => localStorage.setItem(KEY, JSON.stringify(state));
+
+let filt = { s:"all", c:null, r:null, q:"" };
+let view = "list";
+const openCards = new Set();
+
+const norm = s => (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const esc = s => (s||"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const allItems = () => ITEMS.concat(state.custom).filter(it => !state.hidden.includes(it.i));
+
+function matches(it){
+  if (filt.c && it.c !== filt.c) return false;
+  if (filt.r && it.r !== filt.r) return false;
+  const done = !!state.done[it.i];
+  if (filt.s === "todo" && done) return false;
+  if (filt.s === "done" && !done) return false;
+  if (filt.q){
+    const hay = norm(it.t + " " + (it.p||"") + " " + (it.k||"") + " " + (it.d||"") + " " + REGS[it.r]);
+    if (!hay.includes(norm(filt.q))) return false;
+  }
+  return true;
+}
+function fmtDate(iso){
+  if (!iso) return "";
+  const d = new Date(iso + "T12:00:00");
+  return d.toLocaleDateString("fr-CH", {day:"numeric", month:"long", year:"numeric"});
+}
+
+/* ================= photos (IndexedDB) ================= */
+let _db = null;
+function db(){
+  if (_db) return Promise.resolve(_db);
+  return new Promise((res, rej) => {
+    const q = indexedDB.open("suisse100", 1);
+    q.onupgradeneeded = e => {
+      const st = e.target.result.createObjectStore("photos", {keyPath:"pid", autoIncrement:true});
+      st.createIndex("item", "item");
+    };
+    q.onsuccess = e => { _db = e.target.result; res(_db); };
+    q.onerror = () => rej(q.error);
+  });
+}
+function store(mode){ return db().then(d => d.transaction("photos", mode).objectStore("photos")); }
+const req = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+
+const photoIdx = new Map();           // itemId(str) -> [pid,...]
+const urlCache = new Map();           // pid -> objectURL
+function idxAdd(item, pid){ const k = String(item); if(!photoIdx.has(k)) photoIdx.set(k, []); photoIdx.get(k).push(pid); }
+async function loadPhotoIndex(){
+  try{
+    const st = await store("readonly");
+    await new Promise(res => {
+      const cur = st.index("item").openKeyCursor();
+      cur.onsuccess = e => { const c = e.target.result; if (c){ idxAdd(c.key, c.primaryKey); c.continue(); } else res(); };
+      cur.onerror = () => res();
+    });
+  }catch(e){ console.warn("IndexedDB indisponible", e); }
+}
+async function photoURL(pid){
+  if (urlCache.has(pid)) return urlCache.get(pid);
+  const st = await store("readonly");
+  const rec = await req(st.get(pid));
+  if (!rec) return null;
+  const u = URL.createObjectURL(rec.blob);
+  urlCache.set(pid, u);
+  return u;
+}
+async function shrink(file){
+  try{
+    const bmp = await createImageBitmap(file, {imageOrientation:"from-image"});
+    const s = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(bmp.width*s); cv.height = Math.round(bmp.height*s);
+    cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+    const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.82));
+    return blob || file;
+  }catch(e){ return file; }
+}
+async function addPhotos(item, files){
+  for (const f of files){
+    const blob = await shrink(f);
+    const rec = { item:String(item), date:(state.done[item] && state.done[item].date) || new Date().toISOString().slice(0,10), blob };
+    const st = await store("readwrite");
+    const pid = await req(st.add(rec));
+    idxAdd(item, pid);
+  }
+}
+async function removePhoto(pid, item){
+  const st = await store("readwrite");
+  await req(st.delete(pid));
+  const k = String(item), arr = photoIdx.get(k) || [];
+  const j = arr.indexOf(pid); if (j >= 0) arr.splice(j, 1);
+  if (urlCache.has(pid)){ URL.revokeObjectURL(urlCache.get(pid)); urlCache.delete(pid); }
+}
+async function fillStrip(el){
+  const id = el.dataset.ph;
+  const pids = photoIdx.get(String(id)) || [];
+  if (!pids.length){ el.innerHTML = `<span class="none">Pas encore de photo.</span>`; return; }
+  el.innerHTML = "";
+  for (const pid of pids){
+    const u = await photoURL(pid);
+    if (!u) continue;
+    const img = document.createElement("img");
+    img.src = u; img.loading = "lazy"; img.alt = "photo";
+    img.addEventListener("click", ev => { ev.stopPropagation(); openLightbox(pids, pids.indexOf(pid), id); });
+    el.appendChild(img);
+  }
+}
+function hydratePhotos(){ document.querySelectorAll(".photos[data-ph]").forEach(fillStrip); }
+
+/* lightbox */
+const lb = { pids:[], idx:0, item:null };
+async function openLightbox(pids, idx, item){
+  lb.pids = pids; lb.idx = idx; lb.item = item;
+  document.getElementById("lbimg").src = await photoURL(pids[idx]) || "";
+  document.getElementById("lb").classList.add("on");
+}
+async function lbShow(delta){
+  if (!lb.pids.length) return;
+  lb.idx = (lb.idx + delta + lb.pids.length) % lb.pids.length;
+  document.getElementById("lbimg").src = await photoURL(lb.pids[lb.idx]) || "";
+}
+document.getElementById("lbclose").addEventListener("click", () => document.getElementById("lb").classList.remove("on"));
+document.getElementById("lb").addEventListener("click", e => { if (e.target.id === "lb") document.getElementById("lb").classList.remove("on"); });
+document.getElementById("lbprev").addEventListener("click", () => lbShow(-1));
+document.getElementById("lbnext").addEventListener("click", () => lbShow(1));
+document.getElementById("lbdel").addEventListener("click", async () => {
+  if (!confirm("Supprimer cette photo ?")) return;
+  const pid = lb.pids[lb.idx];
+  await removePhoto(pid, lb.item);
+  lb.pids.splice(lb.idx, 1);
+  if (!lb.pids.length){ document.getElementById("lb").classList.remove("on"); render(); return; }
+  lb.idx = lb.idx % lb.pids.length;
+  document.getElementById("lbimg").src = await photoURL(lb.pids[lb.idx]) || "";
+  render();
+});
+
+/* ================= rendu ================= */
+function render(){
+  const items = allItems();
+  const total = items.length;
+  const nDone = items.filter(it => state.done[it.i]).length;
+
+  document.getElementById("tagN").textContent = total;
+  document.getElementById("bigN").textContent = nDone;
+  document.getElementById("bigTot").textContent = "/ " + total;
+  document.getElementById("fill").style.width = (total ? 100*nDone/total : 0) + "%";
+  const gm = document.getElementById("goalMark");
+  if (total > GOAL){ gm.style.display = "block"; gm.style.left = (100*GOAL/total) + "%"; }
+  else gm.style.display = "none";
+
+  const today = new Date();
+  const expected = Math.max(0, Math.min(GOAL, Math.round(GOAL * (today - START) / (END - START))));
+  const diff = nDone - expected;
+  let pace;
+  if (today < START) pace = "Le compte à rebours démarre le 16 juillet 2026.";
+  else if (nDone >= total) pace = "🎉 Tout est fait — il faut agrandir la liste !";
+  else if (nDone >= GOAL) pace = `🏆 Objectif <b>100</b> atteint — plus que ${total - nDone} pour tout finir !`;
+  else if (diff >= 2) pace = `Pour 100 en juillet 2028 il faudrait en être à <b>~${expected}</b> — vous avez <b>${diff} d’avance</b> 🚀`;
+  else if (diff <= -2) pace = `Pour 100 en juillet 2028 il faudrait en être à <b>~${expected}</b> — encore <b>${-diff}</b> à rattraper 😉`;
+  else pace = `Pour 100 en juillet 2028 il faudrait en être à <b>~${expected}</b> — vous êtes <b>dans les temps</b> ✔`;
+  document.getElementById("pace").innerHTML = pace;
+
+  const cc = document.getElementById("catChips");
+  cc.innerHTML = Object.keys(CATS).map(c => {
+    const sub = items.filter(it => it.c === c);
+    const d = sub.filter(it => state.done[it.i]).length;
+    return `<button class="chip${filt.c===c?" on":""}" data-c="${c}">${CATS[c][0]} ${CATS[c][1]}<small>${d}/${sub.length}</small></button>`;
+  }).join("");
+  const rc = document.getElementById("regChips");
+  rc.innerHTML = Object.keys(REGS).map(r => {
+    const sub = items.filter(it => it.r === r);
+    const d = sub.filter(it => state.done[it.i]).length;
+    return `<button class="chip${filt.r===r?" on":""}" data-r="${r}">${REGS[r]}<small>${d}/${sub.length}</small></button>`;
+  }).join("");
+
+  const showFilters = view !== "journal";
+  document.getElementById("toolbar").style.display = showFilters ? "" : "none";
+  cc.style.display = rc.style.display = showFilters ? "" : "none";
+  document.getElementById("map").style.display = view === "map" ? "block" : "none";
+  document.getElementById("maplegend").style.display = view === "map" ? "block" : "none";
+  document.getElementById("list").style.display = view === "map" ? "none" : "";
+
+  if (view === "map"){ renderMap(items); return; }
+  if (view === "journal"){ renderJournal(items); return; }
+  renderList(items);
+}
+
+function renderList(items){
+  const list = document.getElementById("list");
+  let html = "";
+  for (const c of Object.keys(CATS)){
+    const sub = items.filter(it => it.c === c && matches(it));
+    if (!sub.length) continue;
+    const dAll = items.filter(it => it.c === c && state.done[it.i]).length;
+    const tAll = items.filter(it => it.c === c).length;
+    html += `<div class="sec"><span class="dot" style="background:var(--tint-${c})"></span><h2>${CATS[c][1]}</h2><span>${dAll}/${tAll}</span></div>`;
+    for (const it of sub) html += card(it);
+  }
+  list.innerHTML = html || `<p class="empty">Rien ne correspond — essayez d’élargir les filtres.</p>`;
+  hydratePhotos();
+  mountMini();
+}
+
+function card(it){
+  const done = state.done[it.i];
+  const ga = it.g ? `<span class="badge ${GA[it.g][1]}">${GA[it.g][0]}</span>` : "";
+  const nPh = (photoIdx.get(String(it.i)) || []).length;
+  const note = state.notes[it.i] || "";
+  const open = openCards.has(String(it.i));
+  const maps = "https://www.google.com/maps/search/?api=1&query=" + (it.x ? it.x[0] + "," + it.x[1] : encodeURIComponent(it.t + " " + (it.p||"") + " Suisse"));
+  return `<article class="card${done?" done":""}${open?" open":""}" data-i="${it.i}">
+    <div class="top">
+      <span class="emo" style="background:color-mix(in srgb, var(--tint-${it.c}) 16%, transparent)">${CATS[it.c][0]}</span>
+      <div class="mid">
+        <div class="t">${esc(it.t)}</div>
+        <div class="meta">
+          ${it.p ? `<span class="badge">${esc(it.p)}</span>` : ""}
+          ${it.k ? `<span class="badge k">${esc(it.k)}</span>` : ""}
+          ${ga}
+          ${nPh ? `<span class="badge ph">📷 ${nPh}</span>` : ""}
+        </div>
+        <div class="d">${esc(it.d||"")}</div>
+        ${done && done.date ? `<div class="when">✓ Fait le ${fmtDate(done.date)}</div>` : ""}
+      </div>
+      <button class="check" title="${done?"Décocher":"Marquer comme fait"}">✓</button>
+    </div>
+    <div class="panel">
+      ${it.x ? `<div class="minislot" data-mini="${it.i}"></div>` : ""}
+      ${done ? `<label>Fait le</label><input type="date" class="pdate" value="${done.date||""}">` : ""}
+      <label>Notes (idées, resto, souvenirs…)</label>
+      <textarea class="pnote" placeholder="…">${esc(note)}</textarea>
+      <label>Photos</label>
+      <div class="photos" data-ph="${it.i}"></div>
+      <div class="prow">
+        <button class="onmap">🗺️ Sur la carte</button>
+        <button class="addph">📷 Photos</button>
+        <a href="${maps}" target="_blank" rel="noopener">🧭 Itinéraire</a>
+        <button class="del">Supprimer</button>
+      </div>
+    </div>
+  </article>`;
+}
+
+/* ---- journal ---- */
+function renderJournal(items){
+  const list = document.getElementById("list");
+  const done = items.filter(it => state.done[it.i])
+    .sort((a,b) => (state.done[b.i].date||"").localeCompare(state.done[a.i].date||""));
+  if (!done.length){
+    list.innerHTML = `<p class="empty">Le journal se remplira à votre première coche. En route ! 🚂</p>`;
+    return;
+  }
+  let html = `<div class="jhead">Notre carnet de route</div>
+    <p class="jsub">${done.length} aventure${done.length>1?"s":""} déjà vécue${done.length>1?"s":""} — la plus récente en premier.</p>`;
+  for (const it of done){
+    const d = state.done[it.i];
+    const note = state.notes[it.i];
+    html += `<div class="jentry" data-i="${it.i}">
+      <div class="jdate">${fmtDate(d.date) || "date inconnue"}</div>
+      <div class="jt">${CATS[it.c][0]} ${esc(it.t)}</div>
+      <div class="jp">${esc(it.p||"")}${it.k ? " · " + esc(it.k) : ""} · ${REGS[it.r]||""}</div>
+      ${note ? `<div class="jnote">${esc(note)}</div>` : ""}
+      <div class="photos" data-ph="${it.i}"></div>
+    </div>`;
+  }
+  list.innerHTML = html;
+  hydratePhotos();
+}
+
+/* ---- carte ---- */
+let map = null, markers = null;
+const markersById = new Map();
+function renderMap(items){
+  const el = document.getElementById("map");
+  if (typeof L === "undefined"){
+    el.style.display = "block";
+    el.innerHTML = `<p class="empty" style="padding-top:24vh">La carte a besoin d’une connexion internet (première visite).</p>`;
+    return;
+  }
+  if (!map){
+    map = L.map("map");
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18, attribution: "© OpenStreetMap"
+    }).addTo(map);
+    markers = L.layerGroup().addTo(map);
+    map.fitBounds([[45.75, 5.9], [47.85, 10.55]]);
+  }
+  markers.clearLayers();
+  markersById.clear();
+  for (const it of items){
+    if (!it.x || !matches(it)) continue;
+    const done = !!state.done[it.i];
+    const m = L.circleMarker(it.x, {
+      radius: 7, weight: 1.5, color: "#ffffff",
+      fillColor: done ? "#2f7d38" : "#d52b1e", fillOpacity: 0.95
+    });
+    m.bindPopup(`<b>${CATS[it.c][0]} ${esc(it.t)}</b><br>${esc(it.p||"")}${it.k ? " · " + esc(it.k) : ""}<br>` +
+      (done ? `<span style="color:#2f7d38;font-weight:600">✓ fait le ${fmtDate(state.done[it.i].date)}</span><br>` : "") +
+      `<button class="pop-open" onclick="S100.open('${String(it.i)}')">Voir la fiche</button>`);
+    markers.addLayer(m);
+    markersById.set(String(it.i), m);
+  }
+  setTimeout(() => map.invalidateSize(), 60);
+}
+window.S100 = {
+  open(id){
+    const key = isNaN(+id) ? id : +id;
+    view = "list";
+    document.querySelectorAll("#segView button").forEach(x => x.classList.toggle("on", x.dataset.v === "list"));
+    openCards.add(String(key));
+    lastOpenId = String(key);
+    render();
+    let el = document.querySelector(`.card[data-i="${key}"]`);
+    if (!el){ filt = {s:"all", c:null, r:null, q:""}; document.getElementById("q").value = ""; render(); el = document.querySelector(`.card[data-i="${key}"]`); }
+    if (el){ el.scrollIntoView({behavior:"smooth", block:"center"}); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 3500); }
+  },
+  showOnMap(id){
+    view = "map";
+    document.querySelectorAll("#segView button").forEach(x => x.classList.toggle("on", x.dataset.v === "map"));
+    render();
+    window.scrollTo({top: 0, behavior: "smooth"});
+    setTimeout(() => {
+      if (!map) return;
+      const it = allItems().find(o => String(o.i) === String(id));
+      if (!it || !it.x) return;
+      map.setView(it.x, 11, {animate: false});
+      const m = markersById.get(String(id));
+      if (m) m.openPopup();
+    }, 200);
+  }
+};
+
+/* mini-carte dans la fiche ouverte */
+let miniMap = null, miniMarker = null, lastOpenId = null;
+const miniDiv = document.createElement("div");
+miniDiv.className = "minimap";
+function mountMini(){
+  if (typeof L === "undefined" || lastOpenId == null){
+    if (miniDiv.parentNode) miniDiv.parentNode.removeChild(miniDiv);
+    return;
+  }
+  const slot = document.querySelector(`.card.open[data-i="${lastOpenId}"] .minislot`);
+  const it = allItems().find(o => String(o.i) === String(lastOpenId));
+  if (!slot || !it || !it.x){
+    if (miniDiv.parentNode) miniDiv.parentNode.removeChild(miniDiv);
+    return;
+  }
+  slot.appendChild(miniDiv);
+  if (!miniMap){
+    miniMap = L.map(miniDiv, {
+      zoomControl:false, dragging:false, scrollWheelZoom:false, touchZoom:false,
+      doubleClickZoom:false, boxZoom:false, keyboard:false
+    });
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:18, attribution:"© OpenStreetMap"}).addTo(miniMap);
+    miniMarker = L.circleMarker([46.8, 8.2], {radius:8, weight:2, color:"#ffffff", fillColor:"#d5301f", fillOpacity:.95}).addTo(miniMap);
+    miniDiv.addEventListener("click", () => { if (lastOpenId != null) window.S100.showOnMap(lastOpenId); });
+  }
+  miniMarker.setLatLng(it.x);
+  miniMarker.setStyle({fillColor: state.done[it.i] ? "#2f7d38" : "#d5301f"});
+  miniMap.setView(it.x, 11, {animate:false});
+  setTimeout(() => miniMap.invalidateSize(), 60);
+}
+
+/* ================= interactions ================= */
+document.getElementById("segView").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  view = b.dataset.v;
+  document.querySelectorAll("#segView button").forEach(x => x.classList.toggle("on", x === b));
+  render();
+});
+
+let photoTarget = null;
+document.getElementById("list").addEventListener("click", e => {
+  const cardEl = e.target.closest(".card"); if (!cardEl) return;
+  const id = isNaN(+cardEl.dataset.i) ? cardEl.dataset.i : +cardEl.dataset.i;
+
+  if (e.target.closest(".check")){
+    if (state.done[id]) delete state.done[id];
+    else state.done[id] = { date: new Date().toISOString().slice(0,10) };
+    save(); render(); return;
+  }
+  if (e.target.closest(".addph")){
+    photoTarget = id;
+    document.getElementById("filePhoto").click(); return;
+  }
+  if (e.target.closest(".onmap")){
+    window.S100.showOnMap(id); return;
+  }
+  if (e.target.closest(".del")){
+    if (!confirm("Supprimer cet élément de la liste ?")) return;
+    const ci = state.custom.findIndex(x => x.i === id);
+    if (ci >= 0) state.custom.splice(ci,1); else state.hidden.push(id);
+    delete state.done[id]; delete state.notes[id];
+    save(); render(); return;
+  }
+  if (e.target.closest(".panel") || e.target.closest("a")) return;
+  cardEl.classList.toggle("open");
+  if (cardEl.classList.contains("open")){ openCards.add(String(id)); lastOpenId = String(id); }
+  else { openCards.delete(String(id)); if (lastOpenId === String(id)) lastOpenId = null; }
+  hydratePhotos();
+  mountMini();
+});
+document.getElementById("list").addEventListener("input", e => {
+  const cardEl = e.target.closest(".card"); if (!cardEl) return;
+  const id = isNaN(+cardEl.dataset.i) ? cardEl.dataset.i : +cardEl.dataset.i;
+  if (e.target.classList.contains("pnote")){
+    const v = e.target.value.trim();
+    if (v) state.notes[id] = v; else delete state.notes[id];
+    save();
+  }
+  if (e.target.classList.contains("pdate") && state.done[id]){
+    state.done[id].date = e.target.value;
+    const w = cardEl.querySelector(".when");
+    if (w) w.textContent = "✓ Fait le " + fmtDate(e.target.value);
+    save();
+  }
+});
+document.getElementById("filePhoto").addEventListener("change", async e => {
+  const files = Array.from(e.target.files || []);
+  e.target.value = "";
+  if (!files.length || photoTarget == null) return;
+  await addPhotos(photoTarget, files);
+  render();
+});
+
+document.getElementById("q").addEventListener("input", e => { filt.q = e.target.value; render(); });
+document.getElementById("segStatus").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  filt.s = b.dataset.s;
+  document.querySelectorAll("#segStatus button").forEach(x => x.classList.toggle("on", x === b));
+  render();
+});
+document.getElementById("catChips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  filt.c = (filt.c === b.dataset.c) ? null : b.dataset.c; render();
+});
+document.getElementById("regChips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  filt.r = (filt.r === b.dataset.r) ? null : b.dataset.r; render();
+});
+
+document.getElementById("btnRandom").addEventListener("click", () => {
+  const pool = allItems().filter(it => !state.done[it.i] && matches(it));
+  if (!pool.length){ alert("Tout est fait dans cette sélection ! 🎉"); return; }
+  const pick = pool[Math.floor(Math.random()*pool.length)];
+  window.S100.open(String(pick.i));
+});
+
+/* planificateur « Demain ? » */
+const STATIONS = [
+  ["Bâle",47.547,7.590],["Berne",46.949,7.439],["Bienne",47.133,7.243],
+  ["Coire",46.853,9.529],["Delémont",47.362,7.344],["Fribourg",46.803,7.151],
+  ["Genève",46.210,6.142],["Interlaken",46.690,7.869],["La Chaux-de-Fonds",47.100,6.826],
+  ["Lausanne",46.517,6.629],["Lucerne",47.050,8.310],["Lugano",46.005,8.947],
+  ["Neuchâtel",46.997,6.936],["Porrentruy",47.416,7.075],["Saignelégier",47.255,6.995],
+  ["Sion",46.227,7.359],["St-Gall",47.423,9.370],["Zurich",47.378,8.540]
+];
+const dlgPlan = document.getElementById("dlgPlan");
+const plFrom = document.getElementById("plFrom");
+const plT = document.getElementById("plT");
+plFrom.innerHTML = `<option value="">— choisir une gare —</option>`
+  + STATIONS.map((s,j) => `<option value="${j}">${s[0]}</option>`).join("")
+  + `<option value="geo">📍 Ma position</option>`;
+
+function planHome(){
+  const v = plFrom.value;
+  if (v === "geo") return (state.plan && state.plan.geo) || null;
+  if (v === "") return null;
+  const s = STATIONS[+v];
+  return { lat:s[1], lng:s[2] };
+}
+function hav(a, b){
+  const R = 6371, toR = x => x*Math.PI/180;
+  const dLa = toR(b[0]-a.lat), dLo = toR(b[1]-a.lng);
+  const h = Math.sin(dLa/2)**2 + Math.cos(toR(a.lat))*Math.cos(toR(b[0]))*Math.sin(dLo/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function estMin(home, it){
+  const km = hav(home, it.x) * 1.35;               // détour ferroviaire moyen
+  const v = km < 25 ? 45 : km < 80 ? 65 : 85;      // vitesse porte à porte selon la distance
+  let t = km/v*60 + 25;                            // + accès gare et attente
+  if (it.c === "som") t += 40;                     // remontées mécaniques
+  else if (it.c === "ran" || it.c === "eau") t += 15;
+  return Math.round(t/5)*5;
+}
+function fmtMin(m){ const h = Math.floor(m/60), mm = m%60; return h ? h + " h " + String(mm).padStart(2,"0") : mm + " min"; }
+
+let planPool = [], planShown = [], planGen = 0, refTimer = null;
+const ttCache = JSON.parse(localStorage.getItem("suisse100_tt") || "{}");
+const stCache = JSON.parse(localStorage.getItem("suisse100_st") || "{}");
+const CFF = "https://transport.opendata.ch/v1";
+
+function fromKey(){
+  if (plFrom.value === "geo"){
+    const g = state.plan && state.plan.geo;
+    return g ? "g" + g.lat.toFixed(2) + "," + g.lng.toFixed(2) : "g?";
+  }
+  return "s" + plFrom.value;
+}
+async function nearestStation(lat, lng, key){
+  if (stCache[key]) return stCache[key];
+  const r = await fetch(`${CFF}/locations?x=${lat}&y=${lng}&type=station`);
+  const j = await r.json();
+  const s = (j.stations || []).find(o => o && o.name);
+  if (!s) throw new Error("station introuvable");
+  stCache[key] = s.name;
+  localStorage.setItem("suisse100_st", JSON.stringify(stCache));
+  return s.name;
+}
+async function realMin(homeName, it){
+  const key = fromKey() + "|" + it.i;
+  if (ttCache[key] != null) return ttCache[key];
+  const to = await nearestStation(it.x[0], it.x[1], "i" + it.i);
+  const d = new Date(Date.now() + 86400000);
+  const url = `${CFF}/connections?from=${encodeURIComponent(homeName)}&to=${encodeURIComponent(to)}&limit=1&date=${d.toISOString().slice(0,10)}&time=08:00`;
+  const r = await fetch(url);
+  const j = await r.json();
+  const c = j.connections && j.connections[0];
+  const m = c && c.duration && c.duration.match(/(\d+)d(\d+):(\d+)/);
+  if (!m) throw new Error("pas de liaison");
+  const min = (+m[1])*1440 + (+m[2])*60 + (+m[3]);
+  ttCache[key] = min;
+  localStorage.setItem("suisse100_tt", JSON.stringify(ttCache));
+  return min;
+}
+function planRows(){
+  const res = document.getElementById("plRes");
+  const max = +plT.value;
+  planShown = planPool
+    .map(o => Object.assign({}, o, { eff: o.real != null ? o.real : o.t }))
+    .filter(o => o.eff <= max)
+    .sort((a,b) => a.eff - b.eff);
+  if (!planShown.length){ res.innerHTML = `<p class="plempty">Rien dans ce rayon — allongez un peu le trajet !</p>`; return; }
+  res.innerHTML = planShown.slice(0,80).map(o => `<div class="plrow" data-i="${o.it.i}">
+      <span>${CATS[o.it.c][0]}</span>
+      <span class="plt">${esc(o.it.t)}<small>${esc(o.it.p||"")}${o.it.k ? " · " + esc(o.it.k) : ""}</small></span>
+      <span class="pltime${o.real != null ? " real" : ""}">${o.real != null ? "🚆" : "≈"} ${fmtMin(o.eff)}</span>
+    </div>`).join("")
+    + (planShown.length > 80 ? `<p class="plempty">… et ${planShown.length-80} autres.</p>` : "");
+}
+async function refine(home){
+  const gen = ++planGen;
+  const status = document.getElementById("plStatus");
+  if (!navigator.onLine){ status.textContent = "Hors ligne — estimations seulement."; return; }
+  let homeName;
+  try { homeName = await nearestStation(home.lat, home.lng, "h" + fromKey()); }
+  catch(e){ if (gen === planGen) status.textContent = "API CFF injoignable — estimations affichées."; return; }
+  if (gen !== planGen) return;
+  const cand = planPool.filter(o => o.real == null).slice(0, 30);
+  if (!cand.length){ status.textContent = `Horaires CFF réels depuis ${homeName} (demain 8 h).`; return; }
+  let done = 0, ok = 0;
+  for (let i = 0; i < cand.length; i += 5){
+    if (gen !== planGen) return;
+    await Promise.all(cand.slice(i, i + 5).map(async o => {
+      try { o.real = await realMin(homeName, o.it); ok++; } catch(e){}
+      done++;
+    }));
+    if (gen !== planGen) return;
+    status.textContent = `Horaires CFF depuis ${homeName} : ${done}/${cand.length}…`;
+    planRows();
+  }
+  status.textContent = ok ? `Horaires CFF réels depuis ${homeName} (demain 8 h).` : "API CFF injoignable — estimations affichées.";
+  planRows();
+}
+function planRender(){
+  document.getElementById("plTlbl").textContent = fmtMin(+plT.value);
+  state.plan = { from: plFrom.value, maxT: +plT.value, geo: (state.plan && state.plan.geo) || null };
+  save();
+  const home = planHome();
+  const res = document.getElementById("plRes");
+  if (!home){
+    planPool = []; planShown = [];
+    document.getElementById("plStatus").textContent = "";
+    res.innerHTML = `<p class="plempty">${plFrom.value === "geo" ? "Appuyez sur 📍 pour capter votre position." : "Choisissez votre gare de départ."}</p>`;
+    return;
+  }
+  const fk = fromKey();
+  planPool = allItems()
+    .filter(it => !state.done[it.i] && it.x)
+    .map(it => ({ it, t: estMin(home, it), real: ttCache[fk + "|" + it.i] != null ? ttCache[fk + "|" + it.i] : null }))
+    .filter(o => o.t <= +plT.value + 45 || (o.real != null && o.real <= +plT.value))
+    .sort((a,b) => (a.real != null ? a.real : a.t) - (b.real != null ? b.real : b.t));
+  planRows();
+  clearTimeout(refTimer);
+  refTimer = setTimeout(() => refine(home), 350);
+}
+document.getElementById("btnPlan").addEventListener("click", () => {
+  if (state.plan){
+    if (state.plan.from !== undefined) plFrom.value = state.plan.from;
+    if (state.plan.maxT) plT.value = state.plan.maxT;
+  }
+  planRender();
+  dlgPlan.showModal();
+});
+plFrom.addEventListener("change", planRender);
+plT.addEventListener("input", planRender);
+document.getElementById("plGeo").addEventListener("click", () => {
+  if (!navigator.geolocation){ alert("Géolocalisation indisponible sur cet appareil."); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    state.plan = state.plan || {};
+    state.plan.geo = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    plFrom.value = "geo"; save(); planRender();
+  }, () => alert("Position introuvable — choisissez une gare dans la liste."));
+});
+document.getElementById("plRes").addEventListener("click", e => {
+  const row = e.target.closest(".plrow"); if (!row) return;
+  dlgPlan.close(); window.S100.open(row.dataset.i);
+});
+document.getElementById("plRandom").addEventListener("click", () => {
+  if (!planShown.length) return;
+  const pick = planShown[Math.floor(Math.random()*planShown.length)];
+  dlgPlan.close(); window.S100.open(String(pick.it.i));
+});
+document.getElementById("plClose").addEventListener("click", () => dlgPlan.close());
+
+/* ajout */
+const dlg = document.getElementById("dlgAdd");
+document.getElementById("fC").innerHTML = Object.keys(CATS).map(c => `<option value="${c}">${CATS[c][0]} ${CATS[c][1]}</option>`).join("");
+document.getElementById("fR").innerHTML = Object.keys(REGS).map(r => `<option value="${r}">${REGS[r]}</option>`).join("");
+document.getElementById("btnAdd").addEventListener("click", () => dlg.showModal());
+document.getElementById("btnCancel").addEventListener("click", () => dlg.close());
+document.getElementById("formAdd").addEventListener("submit", () => {
+  const t = document.getElementById("fT").value.trim(); if (!t) return;
+  state.custom.push({
+    i: "c" + Date.now(),
+    t, p: document.getElementById("fP").value.trim(),
+    k: document.getElementById("fK").value.trim().toUpperCase(),
+    c: document.getElementById("fC").value,
+    r: document.getElementById("fR").value,
+    d: document.getElementById("fD").value.trim()
+  });
+  save(); render();
+  document.getElementById("formAdd").reset();
+});
+
+/* export / import (fusion, photos comprises) */
+async function exportData(withPhotos){
+  const payload = { app:"suisse100", v:2, exported:new Date().toISOString(), ...state };
+  if (withPhotos){
+    const st = await store("readonly");
+    const recs = await req(st.getAll());
+    payload.photos = [];
+    for (const r of recs){
+      const data = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(r.blob); });
+      payload.photos.push({ item:r.item, date:r.date, size:r.blob.size, data });
+    }
+  }
+  const blob = new Blob([JSON.stringify(payload)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "suisse100-" + new Date().toISOString().slice(0,10) + (withPhotos ? "-avec-photos" : "") + ".json";
+  a.click(); URL.revokeObjectURL(a.href);
+}
+document.getElementById("btnExport").addEventListener("click", () => {
+  const hasPh = [...photoIdx.values()].some(a => a.length);
+  const withPh = hasPh && confirm("Inclure les photos dans le fichier ?\n\nOK = avec photos (fichier plus lourd)\nAnnuler = données seulement");
+  exportData(withPh);
+});
+document.getElementById("btnImport").addEventListener("click", () => document.getElementById("fileImport").click());
+document.getElementById("fileImport").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(async txt => {
+    const imp = JSON.parse(txt);
+    if (imp.app !== "suisse100") throw new Error("format");
+    let n = 0;
+    for (const id in (imp.done||{})) if (!state.done[id]){ state.done[id] = imp.done[id]; n++; }
+    for (const id in (imp.notes||{})) if (!state.notes[id]) state.notes[id] = imp.notes[id];
+    for (const it of (imp.custom||[])) if (!state.custom.some(x => x.i === it.i)){ state.custom.push(it); n++; }
+    for (const id of (imp.hidden||[])) if (!state.hidden.includes(id)) state.hidden.push(id);
+    let nPh = 0;
+    if (Array.isArray(imp.photos)){
+      const stR = await store("readonly");
+      const existing = await req(stR.getAll());
+      for (const p of imp.photos){
+        if (existing.some(r => r.item === p.item && r.date === p.date && r.blob.size === p.size)) continue;
+        const blob = await (await fetch(p.data)).blob();
+        const stW = await store("readwrite");
+        const pid = await req(stW.add({item:p.item, date:p.date, blob}));
+        idxAdd(p.item, pid); nPh++;
+      }
+    }
+    save(); render();
+    alert(`Import réussi — ${n} coche(s)/idée(s) et ${nPh} photo(s) fusionnées. 👍`);
+  }).catch(() => alert("Fichier illisible : il faut un export « suisse100 » (.json)."));
+  e.target.value = "";
+});
+
+/* ================= démarrage ================= */
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
+}
+loadPhotoIndex().then(render);
+</script>
+</body>
+</html>
