@@ -221,6 +221,63 @@ h1 em{font-style:italic;color:var(--red)}
 .jp{font-size:13px;color:var(--mut);margin-top:1px}
 .jnote{font-size:13.5px;margin-top:9px;padding:9px 12px;background:var(--bg);border-radius:12px;white-space:pre-wrap}
 .jentry .photos{margin-top:10px}
+.jentry.up{cursor:pointer;border-style:dashed}
+.jentry.up .jdate{color:var(--amber)}
+.jentry.up .jdate::before{background:var(--amber)}
+.when.plan{color:var(--amber)}
+
+/* ---- à proximité ---- */
+.nearrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.near{
+  font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);
+  border-radius:999px;padding:6px 11px;cursor:pointer;font-weight:600;
+}
+.near:hover{border-color:var(--red)}
+
+/* ---- bilan ---- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px 15px;box-shadow:var(--shadow)}
+.stat b{display:block;font-family:"Fraunces",Georgia,serif;font-size:30px;font-weight:900;letter-spacing:-1px;color:var(--red);line-height:1.1}
+.stat b small{font-size:16px;color:var(--mut);letter-spacing:0}
+.stat span{font-size:12px;color:var(--mut);font-weight:600}
+.cantons{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:7px;margin:10px 0}
+.canton{border:1px solid var(--line);border-radius:12px;padding:8px 6px;text-align:center;background:var(--card)}
+.canton b{display:block;font-size:14px}
+.canton small{font-size:11px;color:var(--mut);font-weight:600}
+.canton.some{border-color:color-mix(in srgb,var(--ok) 45%,var(--line));background:var(--ok-bg)}
+.canton.some b{color:var(--ok)}
+.brow{display:flex;align-items:center;gap:10px;margin:7px 0}
+.brow .bl{width:170px;flex:none;font-size:12.5px;font-weight:600;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:480px){.brow .bl{width:130px}}
+.brow .bt{flex:1;height:10px;background:var(--soft);border-radius:99px;overflow:hidden}
+.brow .bt i{display:block;height:100%;border-radius:99px}
+.brow .bn{width:50px;flex:none;font-size:12px;color:var(--mut);font-weight:600;text-align:right}
+.months{display:flex;align-items:flex-end;gap:5px;height:78px;margin:12px 0 2px}
+.mcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;min-width:0}
+.mcol i{display:block;width:100%;max-width:26px;background:var(--red);border-radius:4px 4px 2px 2px;min-height:3px}
+.mcol.zero i{background:var(--soft)}
+.mcol small{font-size:9.5px;color:var(--mut);font-weight:600}
+.mcol b{font-size:10.5px;color:var(--ink)}
+
+/* ---- carnet imprimable ---- */
+.printbtn{
+  border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;
+  padding:8px 14px;font-size:13px;cursor:pointer;font-weight:600;margin:2px 0 10px;box-shadow:var(--shadow);
+}
+.printcover{display:none}
+@media print{
+  .topbar,.viewseg,.toolbar,.chips,.actions,.notice,#map,.maplegend,.hero,.printbtn,footer,#lb,
+  .jentry.up,.jhead.upcoming,.upsub{display:none!important}
+  body{background:#fff;color:#111;padding-bottom:0}
+  .printcover{display:block;text-align:center;padding:30vh 0 8vh;page-break-after:always}
+  .printcover .cross{display:inline-block;margin-bottom:20px}
+  .printcover h2{font-family:"Fraunces",Georgia,serif;font-size:42px;font-weight:900;margin:0}
+  .printcover h2 em{font-style:italic;color:var(--red)}
+  .printcover p{color:#666;font-size:15px}
+  .jentry{break-inside:avoid;box-shadow:none;border:1px solid #ddd;background:#fff}
+  .jnote{background:#f6f3ec}
+  .photos img{width:118px;height:118px}
+}
 
 .empty{color:var(--mut);text-align:center;padding:44px 0;font-size:14px}
 footer{margin-top:40px;padding:20px 0 34px;border-top:1px solid var(--line);color:var(--mut);font-size:12.5px}
@@ -259,6 +316,7 @@ input[type=range]{width:100%;accent-color:var(--red);margin:6px 0 0}
 .plrow:hover{background:var(--soft)}
 .plrow .plt{flex:1;min-width:0;font-size:14px;font-weight:600}
 .plrow .plt small{display:block;color:var(--mut);font-size:12px;font-weight:400}
+.plrow .plwx{font-size:12px;color:var(--mut);font-weight:600;white-space:nowrap}
 .plrow .pltime{font-weight:700;font-size:13px;color:var(--red);white-space:nowrap}
 .plrow .pltime.real{color:var(--ok)}
 .plempty{font-size:13.5px;color:var(--mut);padding:14px 3px}
@@ -284,6 +342,7 @@ input[type=range]{width:100%;accent-color:var(--red);margin:6px 0 0}
     <button data-v="list" class="on">📋 Liste</button>
     <button data-v="map">🗺️ Carte</button>
     <button data-v="journal">📖 Journal</button>
+    <button data-v="bilan">📊 Bilan</button>
   </div>
 
   <div class="toolbar" id="toolbar">
@@ -327,6 +386,7 @@ input[type=range]{width:100%;accent-color:var(--red);margin:6px 0 0}
     <p><b>Photos</b> : elles restent sur cet appareil (stockage du navigateur). Pour les transférer, utilisez « Exporter » avec photos.</p>
     <p><b>À deux</b> : « 📤 Envoyer » partage le fichier directement (WhatsApp, AirDrop…), puis « Importer » sur l’autre téléphone — coches, notes et photos fusionnent. « Exporter » télécharge le même fichier.</p>
     <p><b>Saisons</b> : le badge 🗓️ indique les mois où l’idée est faisable (fêtes, cols, remontées, baignades) ; en orange = hors saison en ce moment. Indicatif — vérifiez les dates exactes avant de partir.</p>
+    <p><b>Planifier</b> : notez une date « 📅 Prévu le » dans une fiche — elle apparaît en tête du Journal. Et quand le carnet sera bien rempli, le bouton 🖨️ du Journal en fait un livre souvenir à imprimer (PDF). Météo : prévisions Open-Meteo, sans compte.</p>
     <p>Objectif : 100 avant juillet 2028. Bonne route ! 🇨🇭</p>
   </footer>
 </div>
@@ -350,7 +410,7 @@ input[type=range]{width:100%;accent-color:var(--red);margin:6px 0 0}
   </div>
   <label>Trajet max (aller) : <span id="plTlbl">2 h 00</span></label>
   <input type="range" id="plT" min="30" max="240" step="15" value="120">
-  <p class="plnote">🚆 vert = horaire réel CFF pour demain matin · ≈ rouge = estimation en attendant · les idées hors saison sont masquées.</p>
+  <p class="plnote">🚆 vert = horaire CFF réel (demain 8 h) · ≈ = estimation · ☀️ = météo prévue demain sur place · idées hors saison masquées.</p>
   <p class="plnote" id="plStatus"></p>
   <div id="plRes"></div>
   <div class="drow">
@@ -749,7 +809,7 @@ for (const it of ITEMS) if (SEASONS[it.i]) it.m = SEASONS[it.i];
 /* ================= état ================= */
 const KEY = "suisse100_v1";
 const START = new Date("2026-07-16"), END = new Date("2028-07-16"), GOAL = 100;
-let state = { done:{}, notes:{}, custom:[], hidden:[] };
+let state = { done:{}, notes:{}, custom:[], hidden:[], planned:{} };
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && typeof s === "object") state = Object.assign(state, s); } catch(e){}
 const save = () => localStorage.setItem(KEY, JSON.stringify(state));
 
@@ -793,6 +853,36 @@ function seasonLabel(m){
     runs.push([s, e]);
   }
   return runs.map(([s, e]) => s === e ? MOIS[s-1] : MOIS[s-1] + "–" + MOIS[e-1]).join(", ");
+}
+
+/* ---- à proximité (vol d'oiseau, pour combiner deux coches en une sortie) ---- */
+function nearby(it, n = 3){
+  return allItems()
+    .filter(o => String(o.i) !== String(it.i) && o.x && !state.done[o.i])
+    .map(o => ({ o, km: Math.round(hav({lat:it.x[0], lng:it.x[1]}, o.x)) }))
+    .filter(e => e.km <= 25)
+    .sort((a, b) => a.km - b.km)
+    .slice(0, n);
+}
+
+/* ---- météo de demain (Open-Meteo, gratuit, sans clé) ---- */
+const wxCache = new Map();   // "lat,lng" arrondi à ~10 km -> {c:code météo, t:temp max} pour demain
+const wxKey = it => it.x[0].toFixed(1) + "," + it.x[1].toFixed(1);
+const wxEmo = c => c === 0 ? "☀️" : c <= 2 ? "🌤️" : c === 3 ? "☁️" : c <= 48 ? "🌫️"
+  : c <= 57 ? "🌦️" : c <= 67 ? "🌧️" : c <= 77 ? "🌨️" : c <= 82 ? "🌧️" : c <= 86 ? "🌨️" : "⛈️";
+async function fetchWx(list){
+  const need = [...new Set(list.map(wxKey))].filter(k => !wxCache.has(k)).slice(0, 90);
+  if (!need.length || !navigator.onLine) return false;
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + need.map(k => k.split(",")[0]).join(",")
+    + "&longitude=" + need.map(k => k.split(",")[1]).join(",")
+    + "&daily=weather_code,temperature_2m_max&timezone=Europe%2FZurich&forecast_days=2";
+  const j = await (await fetch(url)).json();
+  const arr = Array.isArray(j) ? j : [j];
+  arr.forEach((o, ix) => {
+    if (o && o.daily && o.daily.weather_code)
+      wxCache.set(need[ix], { c: o.daily.weather_code[1], t: Math.round(o.daily.temperature_2m_max[1]) });
+  });
+  return true;
 }
 
 /* ================= photos (IndexedDB) ================= */
@@ -946,7 +1036,7 @@ function render(){
 
   updateBackupNotice();
 
-  const showFilters = view !== "journal";
+  const showFilters = view === "list" || view === "map";
   document.getElementById("toolbar").style.display = showFilters ? "" : "none";
   cc.style.display = rc.style.display = showFilters ? "" : "none";
   document.getElementById("map").style.display = view === "map" ? "block" : "none";
@@ -955,7 +1045,73 @@ function render(){
 
   if (view === "map"){ renderMap(items); return; }
   if (view === "journal"){ renderJournal(items); return; }
+  if (view === "bilan"){ renderBilan(items); return; }
   renderList(items);
+}
+
+/* ---- bilan ---- */
+function renderBilan(items){
+  const list = document.getElementById("list");
+  const doneItems = items.filter(it => state.done[it.i]);
+  const n = doneItems.length, total = items.length;
+  const KANT = ["AG","AI","AR","BE","BL","BS","FR","GE","GL","GR","JU","LU","NE",
+                "NW","OW","SG","SH","SO","SZ","TG","TI","UR","VD","VS","ZG","ZH"];
+  const perK = {};
+  for (const k of KANT) perK[k] = { d:0, t:0 };
+  for (const it of items){ if (perK[it.k]){ perK[it.k].t++; if (state.done[it.i]) perK[it.k].d++; } }
+  const kVisited = KANT.filter(k => perK[k].d).length;
+  const nPhotos = [...photoIdx.values()].reduce((s, a) => s + a.length, 0);
+  const today = new Date();
+  const expected = Math.max(0, Math.min(GOAL, Math.round(GOAL * (today - START) / (END - START))));
+  const diff = n - expected;
+
+  const months = [];
+  for (let i = 11; i >= 0; i--){
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 15);
+    months.push({ key: d.toISOString().slice(0,7), lbl: MOIS[d.getMonth()].replace(".",""), n: 0 });
+  }
+  for (const it of doneItems){
+    const m = months.find(x => x.key === (state.done[it.i].date || "").slice(0,7));
+    if (m) m.n++;
+  }
+  const mMax = Math.max(1, ...months.map(m => m.n));
+
+  let html = `<div class="jhead">Notre bilan</div>
+    <p class="jsub">Tout ce qu’on a déjà vécu, en chiffres.</p>
+    <div class="stats">
+      <div class="stat"><b>${n}</b><span>aventure${n>1?"s":""} sur ${total}</span></div>
+      <div class="stat"><b>${kVisited}<small>/26</small></b><span>cantons visités</span></div>
+      <div class="stat"><b>${nPhotos}</b><span>photo${nPhotos>1?"s":""} souvenirs</span></div>
+      <div class="stat"><b>${diff >= 0 ? "+" + diff : diff}</b><span>${diff >= 0 ? "d’avance" : "de retard"} sur l’objectif 100</span></div>
+    </div>`;
+
+  html += `<div class="sec"><span class="dot" style="background:var(--red)"></span><h2>Les 26 cantons</h2><span>${kVisited}/26</span></div>
+    <div class="cantons">` + KANT.map(k =>
+      `<div class="canton${perK[k].d ? " some" : ""}"><b>${k}</b><small>${perK[k].d}/${perK[k].t}</small></div>`).join("") + `</div>`;
+
+  html += `<div class="sec"><span class="dot" style="background:var(--red)"></span><h2>Par catégorie</h2><span>${n}/${total}</span></div>`;
+  for (const c of Object.keys(CATS)){
+    const t = items.filter(it => it.c === c).length;
+    const d = items.filter(it => it.c === c && state.done[it.i]).length;
+    html += `<div class="brow"><span class="bl">${CATS[c][0]} ${CATS[c][1]}</span>
+      <span class="bt"><i style="width:${t ? 100*d/t : 0}%;background:var(--tint-${c})"></i></span>
+      <span class="bn">${d}/${t}</span></div>`;
+  }
+
+  html += `<div class="sec"><span class="dot" style="background:var(--red)"></span><h2>Par région</h2><span></span></div>`;
+  for (const r of Object.keys(REGS)){
+    const t = items.filter(it => it.r === r).length;
+    const d = items.filter(it => it.r === r && state.done[it.i]).length;
+    html += `<div class="brow"><span class="bl">${REGS[r]}</span>
+      <span class="bt"><i style="width:${t ? 100*d/t : 0}%;background:var(--red)"></i></span>
+      <span class="bn">${d}/${t}</span></div>`;
+  }
+
+  html += `<div class="sec"><span class="dot" style="background:var(--red)"></span><h2>Les 12 derniers mois</h2><span></span></div>
+    <div class="months">` + months.map(m =>
+      `<div class="mcol${m.n ? "" : " zero"}"><b>${m.n || " "}</b><i style="height:${Math.max(3, Math.round(56*m.n/mMax))}px"></i><small>${m.lbl}</small></div>`).join("") + `</div>`;
+
+  list.innerHTML = html;
 }
 
 function renderList(items){
@@ -980,6 +1136,7 @@ function card(it){
   const nPh = (photoIdx.get(String(it.i)) || []).length;
   const note = state.notes[it.i] || "";
   const open = openCards.has(String(it.i));
+  const near = open && it.x ? nearby(it) : [];
   const maps = "https://www.google.com/maps/search/?api=1&query=" + (it.x ? it.x[0] + "," + it.x[1] : encodeURIComponent(it.t + " " + (it.p||"") + " Suisse"));
   return `<article class="card${done?" done":""}${open?" open":""}" data-i="${it.i}">
     <div class="top">
@@ -995,16 +1152,20 @@ function card(it){
         </div>
         <div class="d">${esc(it.d||"")}</div>
         ${done && done.date ? `<div class="when">✓ Fait le ${fmtDate(done.date)}</div>` : ""}
+        ${!done && state.planned[it.i] ? `<div class="when plan">📅 Prévu le ${fmtDate(state.planned[it.i])}</div>` : ""}
       </div>
       <button class="check" title="${done?"Décocher":"Marquer comme fait"}">✓</button>
     </div>
     <div class="panel">
       ${it.x ? `<div class="minislot" data-mini="${it.i}"></div>` : ""}
       ${done ? `<label>Fait le</label><input type="date" class="pdate" value="${done.date||""}">` : ""}
+      ${!done ? `<label>📅 Prévu le (optionnel)</label><input type="date" class="pplan" value="${state.planned[it.i]||""}">` : ""}
       <label>Notes (idées, resto, souvenirs…)</label>
       <textarea class="pnote" placeholder="…">${esc(note)}</textarea>
       <label>Photos</label>
       <div class="photos" data-ph="${it.i}"></div>
+      ${near.length ? `<label>À proximité, à combiner</label><div class="nearrow">${near.map(e =>
+        `<button class="near" data-n="${e.o.i}">${CATS[e.o.c][0]} ${esc(e.o.t)} · ${e.km} km</button>`).join("")}</div>` : ""}
       <div class="prow">
         <button class="onmap">🗺️ Sur la carte</button>
         <button class="addph">📷 Photos</button>
@@ -1020,12 +1181,34 @@ function renderJournal(items){
   const list = document.getElementById("list");
   const done = items.filter(it => state.done[it.i])
     .sort((a,b) => (state.done[b.i].date||"").localeCompare(state.done[a.i].date||""));
-  if (!done.length){
+  const upcoming = items.filter(it => !state.done[it.i] && state.planned[it.i])
+    .sort((a,b) => state.planned[a.i].localeCompare(state.planned[b.i]));
+  if (!done.length && !upcoming.length){
     list.innerHTML = `<p class="empty">Le journal se remplira à votre première coche. En route ! 🚂</p>`;
     return;
   }
-  let html = `<div class="jhead">Notre carnet de route</div>
-    <p class="jsub">${done.length} aventure${done.length>1?"s":""} déjà vécue${done.length>1?"s":""} — la plus récente en premier.</p>`;
+  let html = "";
+  if (upcoming.length){
+    html += `<div class="jhead upcoming">À venir</div>
+      <p class="jsub upsub">Vos prochaines escapades — touchez pour ouvrir la fiche.</p>`;
+    for (const it of upcoming){
+      html += `<div class="jentry up" data-i="${it.i}">
+        <div class="jdate">${fmtDate(state.planned[it.i])}</div>
+        <div class="jt">${CATS[it.c][0]} ${esc(it.t)}</div>
+        <div class="jp">${esc(it.p||"")}${it.k ? " · " + esc(it.k) : ""} · ${REGS[it.r]||""}</div>
+      </div>`;
+    }
+  }
+  if (!done.length){ list.innerHTML = html; return; }
+  const dts = done.map(it => state.done[it.i].date).filter(Boolean).sort();
+  html += `<div class="jhead">Notre carnet de route</div>
+    <p class="jsub">${done.length} aventure${done.length>1?"s":""} déjà vécue${done.length>1?"s":""} — la plus récente en premier.</p>
+    <button class="printbtn" id="btnPrint">🖨️ Générer notre carnet (imprimer / PDF)</button>
+    <div class="printcover">
+      <span class="cross"></span>
+      <h2>Suisse <em>100</em></h2>
+      <p>Notre carnet de route — ${done.length} aventure${done.length>1?"s":""} à deux${dts.length ? `<br>${fmtDate(dts[0])} — ${fmtDate(dts[dts.length-1])}` : ""}</p>
+    </div>`;
   for (const it of done){
     const d = state.done[it.i];
     const note = state.notes[it.i];
@@ -1039,6 +1222,14 @@ function renderJournal(items){
   }
   list.innerHTML = html;
   hydratePhotos();
+}
+
+/* carnet imprimable : on force le chargement des photos avant d'imprimer */
+async function printBook(){
+  const imgs = [...document.querySelectorAll("#list .photos img")];
+  imgs.forEach(im => im.loading = "eager");
+  await Promise.all(imgs.map(im => im.complete ? null : new Promise(r => { im.onload = im.onerror = r; })));
+  window.print();
 }
 
 /* ---- carte ---- */
@@ -1145,12 +1336,18 @@ document.getElementById("segView").addEventListener("click", e => {
 
 let photoTarget = null;
 document.getElementById("list").addEventListener("click", e => {
+  if (e.target.closest("#btnPrint")){ printBook(); return; }
+  const up = e.target.closest(".jentry.up");
+  if (up){ window.S100.open(up.dataset.i); return; }
+  const nearBtn = e.target.closest(".near");
+  if (nearBtn){ window.S100.open(nearBtn.dataset.n); return; }
+
   const cardEl = e.target.closest(".card"); if (!cardEl) return;
   const id = isNaN(+cardEl.dataset.i) ? cardEl.dataset.i : +cardEl.dataset.i;
 
   if (e.target.closest(".check")){
     if (state.done[id]) delete state.done[id];
-    else state.done[id] = { date: new Date().toISOString().slice(0,10) };
+    else { state.done[id] = { date: new Date().toISOString().slice(0,10) }; delete state.planned[id]; }
     save(); render(); return;
   }
   if (e.target.closest(".addph")){
@@ -1188,6 +1385,13 @@ document.getElementById("list").addEventListener("input", e => {
     if (w) w.textContent = "✓ Fait le " + fmtDate(e.target.value);
     save();
   }
+});
+document.getElementById("list").addEventListener("change", e => {
+  if (!e.target.classList.contains("pplan")) return;
+  const cardEl = e.target.closest(".card"); if (!cardEl) return;
+  const id = isNaN(+cardEl.dataset.i) ? cardEl.dataset.i : +cardEl.dataset.i;
+  if (e.target.value) state.planned[id] = e.target.value; else delete state.planned[id];
+  save(); render();
 });
 document.getElementById("filePhoto").addEventListener("change", async e => {
   const files = Array.from(e.target.files || []);
@@ -1306,11 +1510,15 @@ function planRows(){
     .filter(o => o.eff <= max)
     .sort((a,b) => a.eff - b.eff);
   if (!planShown.length){ res.innerHTML = `<p class="plempty">Rien dans ce rayon — allongez un peu le trajet !</p>`; return; }
-  res.innerHTML = planShown.slice(0,80).map(o => `<div class="plrow" data-i="${o.it.i}">
+  res.innerHTML = planShown.slice(0,80).map(o => {
+    const w = wxCache.get(wxKey(o.it));
+    return `<div class="plrow" data-i="${o.it.i}">
       <span>${CATS[o.it.c][0]}</span>
       <span class="plt">${esc(o.it.t)}<small>${esc(o.it.p||"")}${o.it.k ? " · " + esc(o.it.k) : ""}</small></span>
+      ${w ? `<span class="plwx">${wxEmo(w.c)} ${w.t}°</span>` : ""}
       <span class="pltime${o.real != null ? " real" : ""}">${o.real != null ? "🚆" : "≈"} ${fmtMin(o.eff)}</span>
-    </div>`).join("")
+    </div>`;
+  }).join("")
     + (planShown.length > 80 ? `<p class="plempty">… et ${planShown.length-80} autres.</p>` : "");
 }
 async function refine(home){
@@ -1336,6 +1544,7 @@ async function refine(home){
   }
   status.textContent = ok ? `Horaires CFF réels depuis ${homeName} (demain 8 h).` : "API CFF injoignable — estimations affichées.";
   planRows();
+  fetchWx(planShown.slice(0, 80).map(o => o.it)).then(w => { if (w && gen === planGen) planRows(); }).catch(() => {});
 }
 function planRender(){
   document.getElementById("plTlbl").textContent = fmtMin(+plT.value);
@@ -1357,6 +1566,7 @@ function planRender(){
     .filter(o => o.t <= +plT.value + 45 || (o.real != null && o.real <= +plT.value))
     .sort((a,b) => (a.real != null ? a.real : a.t) - (b.real != null ? b.real : b.t));
   planRows();
+  fetchWx(planShown.slice(0, 80).map(o => o.it)).then(ok => { if (ok) planRows(); }).catch(() => {});
   clearTimeout(refTimer);
   refTimer = setTimeout(() => refine(home), 350);
 }
@@ -1486,6 +1696,7 @@ document.getElementById("fileImport").addEventListener("change", e => {
     let n = 0;
     for (const id in (imp.done||{})) if (!state.done[id]){ state.done[id] = imp.done[id]; n++; }
     for (const id in (imp.notes||{})) if (!state.notes[id]) state.notes[id] = imp.notes[id];
+    for (const id in (imp.planned||{})) if (!state.planned[id] && !state.done[id]) state.planned[id] = imp.planned[id];
     for (const it of (imp.custom||[])) if (!state.custom.some(x => x.i === it.i)){ state.custom.push(it); n++; }
     for (const id of (imp.hidden||[])) if (!state.hidden.includes(id)) state.hidden.push(id);
     let nPh = 0;

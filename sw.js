@@ -1,5 +1,5 @@
 /* Suisse 100 — service worker : app utilisable hors ligne (sauf tuiles de carte) */
-const VERSION = "s100-v8";
+const VERSION = "s100-v9";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
@@ -21,8 +21,9 @@ self.addEventListener("fetch", e => {
   // Tuiles OSM : réseau uniquement (politique d'usage OSM, et trop volumineux à cacher)
   if (url.hostname.endsWith("tile.openstreetmap.org")) return;
 
-  // API des transports : toujours en direct, jamais en cache
+  // API des transports et météo : toujours en direct, jamais en cache
   if (url.hostname.endsWith("transport.opendata.ch")) return;
+  if (url.hostname.endsWith("open-meteo.com")) return;
 
   // App + polices + Leaflet : cache d'abord, mise à jour en arrière-plan
   e.respondWith(
