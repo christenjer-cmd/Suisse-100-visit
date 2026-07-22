@@ -347,7 +347,7 @@ input[type=range]{width:100%;accent-color:var(--red);margin:6px 0 0}
 
   <div class="toolbar" id="toolbar">
     <div class="inner">
-      <input id="q" type="search" placeholder="Rechercher (lieu, canton, mot-clé)…">
+      <input id="q" type="search" placeholder="Rechercher : « lac montagne », « train », « baignade »…">
       <div class="seg" id="segStatus">
         <button data-s="all" class="on">Tout</button>
         <button data-s="todo">À faire</button>
@@ -766,7 +766,27 @@ const ITEMS = [
 {i:271,c:"ins",r:"al",k:"OW",t:"Nuit en igloo",p:"Engelberg (ou Zermatt…)",g:"pay",x:[46.820,8.401],d:"Dormir sous une voûte de neige sculptée, peaux de mouton comprises (hiver)."},
 {i:272,c:"ins",r:"ro",k:"VD",t:"Montgolfières de Château-d’Oex",p:"Château-d’Oex",g:"pay",x:[46.475,7.131],d:"La capitale mondiale du ballon : festival en janvier, vols toute l’année."},
 {i:273,c:"ins",r:"al",k:"BE",t:"Canyoning",p:"région d’Interlaken",g:"pay",x:[46.635,7.839],d:"Sauter, glisser et nager dans les gorges, combinaison et guide compris (été)."},
-{i:274,c:"ins",r:"al",k:"BE",t:"Parapente biplace",p:"Interlaken",g:"pay",x:[46.686,7.863],d:"Décoller du Beatenberg et planer face à Eiger, Mönch et Jungfrau."}
+{i:274,c:"ins",r:"al",k:"BE",t:"Parapente biplace",p:"Interlaken",g:"pay",x:[46.686,7.863],d:"Décoller du Beatenberg et planer face à Eiger, Mönch et Jungfrau."},
+
+/* --- v10 : lacs de montagne & panoramas accessibles en transports --- */
+{i:275,c:"eau",r:"ro",k:"NE",t:"Lac des Taillères",p:"La Brévine",g:"inc",x:[46.982,6.590],d:"Le lac du val de La Brévine, la « Sibérie de la Suisse » : miroir à mélèzes l’été, patinoire naturelle quand il gèle. Car postal depuis Fleurier ou Le Locle — le plus proche de La Chaux-de-Fonds."},
+{i:276,c:"som",r:"ro",k:"NE",t:"Tête de Ran & Mont Racine",p:"Montagnes neuchâteloises",g:"inc",x:[47.058,6.808],d:"La crête-balcon à deux pas de La Chaux-de-Fonds : tout l’arc alpin d’un côté, les lacs de l’autre. Car postal ou petite montée à pied ; raquettes l’hiver."},
+{i:277,c:"eau",r:"al",k:"VS",t:"Stellisee",p:"Zermatt",g:"red",x:[46.017,7.795],m:[6,7,8,9,10],d:"Le Cervin qui se mire dans l’eau — LA carte postale du Valais. Funiculaire de Sunnegga puis 25 min de marche."},
+{i:278,c:"eau",r:"al",k:"SZ",t:"Wägitalersee",p:"Innerthal",g:"inc",x:[47.075,8.880],m:[4,5,6,7,8,9,10,11],d:"Un fjord turquoise presque secret à une heure de Zurich. Car postal jusqu’à Innerthal, tour du lac tranquille."},
+{i:279,c:"eau",r:"al",k:"NW",t:"Bannalpsee",p:"Oberrickenbach",g:"red",x:[46.867,8.437],m:[6,7,8,9,10],d:"Petit téléphérique rustique puis un lac de barrage posé sous les parois, buvette d’alpage au bord de l’eau."},
+{i:280,c:"eau",r:"al",k:"GL",t:"Oberblegisee",p:"Luchsingen",g:"red",x:[46.983,9.018],m:[6,7,8,9,10],d:"Le lac suspendu du Glarnerland, d’un bleu profond : funiculaire de Luchsingen puis 1 h de marche."},
+{i:281,c:"eau",r:"ro",k:"VS",t:"Lac de Salanfe",p:"Van d’en Haut",g:"inc",x:[46.150,6.987],m:[6,7,8,9,10],d:"Grand lac d’altitude cerné de sommets, au bout d’un car postal depuis Salvan puis 1 h de montée."},
+{i:282,c:"eau",r:"ro",k:"VD",t:"Lac Retaud",p:"Les Diablerets",g:"inc",x:[46.353,7.208],m:[6,7,8,9,10],d:"Miroir des Diablerets à deux pas de l’arrêt du car postal, buvette et barque en bois."},
+{i:283,c:"eau",r:"ro",k:"VD",t:"Lac Lioson",p:"Les Mosses",g:"red",x:[46.400,7.147],m:[6,7,8,9,10],d:"Cirque parfait au-dessus des Mosses : télésiège puis 20 min, ou 1 h à pied. Auberge au bord de l’eau."},
+{i:284,c:"eau",r:"al",k:"BE",t:"Grimselsee & Totensee",p:"Col du Grimsel",g:"inc",x:[46.567,8.335],m:[6,7,8,9,10],d:"Deux lacs de barrage d’un vert minéral au sommet du col, où passe le car postal Meiringen–Gletsch."},
+{i:285,c:"eau",r:"gr",k:"GR",t:"Lai da Marmorera",p:"Route du Julier",g:"inc",x:[46.502,9.632],m:[4,5,6,7,8,9,10,11],d:"Le lac turquoise de la route du Julier, mélèzes et sommets — car postal Coire–St-Moritz."},
+{i:286,c:"eau",r:"gr",k:"GR",t:"Zervreilasee",p:"Vals",g:"inc",x:[46.615,9.048],m:[6,7,8,9,10],d:"Au bout de la vallée de Vals, sous la pyramide du Zervreilahorn — car postal depuis les thermes."},
+{i:287,c:"eau",r:"ti",k:"TI",t:"Lago dei Cavagnöö",p:"Robiei, Val Bavona",g:"red",x:[46.446,8.513],m:[6,7,8,9,10],d:"Le funiculaire de Robiei grimpe vers un plateau de lacs de barrage — le bout sauvage du Tessin."},
+{i:288,c:"eau",r:"gr",k:"GR",t:"Partnunsee",p:"St. Antönien",g:"inc",x:[46.983,9.822],m:[6,7,8,9,10],d:"Le lac de baignade le plus haut du Prättigau, sous les Sulzfluh — car postal jusqu’à Partnun."},
+{i:289,c:"eau",r:"al",k:"BE",t:"Seebergsee",p:"Diemtigtal",g:"inc",x:[46.545,7.497],m:[6,7,8,9,10],d:"Petit lac d’alpage dans la vallée protégée du Diemtigtal — car postal puis balade tranquille."},
+{i:290,c:"eau",r:"ro",k:"VS",t:"Lac d’Emosson",p:"Finhaut",g:"red",x:[46.070,6.928],m:[6,7,8,9,10],d:"Immense barrage face au Mont-Blanc, empreintes de dinosaures à la clé — petit train à crémaillère VerticAlp depuis Le Châtelard."},
+{i:291,c:"som",r:"al",k:"BE",t:"Harder Kulm",p:"Interlaken",g:"red",x:[46.699,7.879],m:[4,5,6,7,8,9,10,11],d:"Le funiculaire raide jusqu’au balcon d’Interlaken : les deux lacs turquoise et la Jungfrau en face."},
+{i:292,c:"som",r:"al",k:"BE",t:"Niederhorn",p:"Beatenberg",g:"red",x:[46.717,7.750],m:[4,5,6,7,8,9,10,11],d:"Bouquetins au bord du sentier et vue plongeante sur le lac de Thoune — funiculaire puis télécabine."}
 ];
 
 /* Saisons : mois (1–12) où l'idée est réellement faisable — dates de fêtes,
@@ -806,6 +826,13 @@ const SEASONS = {
 };
 for (const it of ITEMS) if (SEASONS[it.i]) it.m = SEASONS[it.i];
 
+/* Mots-clés de recherche : « lac de montagne / altitude / baignade » ne figure pas
+   toujours dans le texte — on tague les lacs alpins (anciens et nouveaux) pour qu'ils
+   remontent quand on cherche « lac montagne », « baignade », etc. */
+const LACS_MONTAGNE = [41,43,44,45,101,102,103,104,105,106,107,108,109,169,170,172,175,
+  215,216,217,218,275,277,278,279,280,281,282,283,284,285,286,287,288,289,290];
+for (const it of ITEMS) if (LACS_MONTAGNE.includes(it.i)) it.kw = "lac montagne altitude baignade " + (it.kw || "");
+
 /* ================= état ================= */
 const KEY = "suisse100_v1";
 const START = new Date("2026-07-16"), END = new Date("2028-07-16"), GOAL = 100;
@@ -829,8 +856,9 @@ function matches(it){
   if (filt.s === "todo" && done) return false;
   if (filt.s === "done" && !done) return false;
   if (filt.q){
-    const hay = norm(it.t + " " + (it.p||"") + " " + (it.k||"") + " " + (it.d||"") + " " + REGS[it.r]);
-    if (!hay.includes(norm(filt.q))) return false;
+    const hay = norm([it.t, it.p, it.k, it.d, REGS[it.r], CATS[it.c][1], it.kw].join(" "));
+    const terms = norm(filt.q).split(/\s+/).filter(Boolean);
+    if (!terms.every(t => hay.includes(t))) return false;
   }
   return true;
 }
