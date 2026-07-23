@@ -234,6 +234,21 @@ h1 em{font-style:italic;color:var(--red)}
 }
 .near:hover{border-color:var(--red)}
 
+/* ---- « Sur place » : POI OpenStreetMap ---- */
+.surplace{margin-top:13px}
+.spchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.spchip{font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 11px;cursor:pointer;font-weight:600}
+.spchip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.spres:not(:empty){margin-top:8px;border-top:1px solid var(--line)}
+.sprow{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink)}
+.sprow:last-child{border-bottom:0}
+.spemo{width:26px;text-align:center;font-size:16px;flex:none}
+.spt{flex:1;min-width:0;font-size:13.5px;font-weight:600}
+.spt small{display:block;color:var(--mut);font-size:11.5px;font-weight:500}
+.spd{font-size:12px;color:var(--red);font-weight:700;white-space:nowrap}
+.spmsg{font-size:12.5px;color:var(--mut);padding:10px 4px}
+.spmsg button{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;font-weight:600;margin-left:4px}
+
 /* ---- bilan ---- */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px 15px;box-shadow:var(--shadow)}
@@ -913,6 +928,102 @@ async function fetchWx(list){
   return true;
 }
 
+/* ================= « Sur place » : POI OpenStreetMap autour d'un lieu (Overpass) ================= */
+const OVERPASS = "https://overpass-api.de/api/interpreter";
+const SP_CATS = {
+  utile:   { emo:"🚻", label:"Utile",   q:'nwr["amenity"~"^(toilets|drinking_water)$"];nwr["tourism"="picnic_site"];nwr["leisure"="picnic_table"]' },
+  manger:  { emo:"🍴", label:"Manger",  q:'nwr["amenity"~"^(restaurant|cafe|fast_food|bar|pub|biergarten)$"]' },
+  courses: { emo:"🛒", label:"Courses", q:'nwr["shop"~"^(bakery|supermarket|convenience|deli|greengrocer|butcher)$"]' },
+  culture: { emo:"🏛️", label:"Culture", q:'nwr["tourism"~"^(museum|gallery|artwork)$"];nwr["amenity"="place_of_worship"];nwr["historic"~"^(castle|monument|memorial|ruins|church)$"]' },
+  voir:    { emo:"👁️", label:"À voir",  q:'nwr["tourism"~"^(viewpoint|attraction)$"];nwr["natural"="peak"]' }
+};
+const spCache = new Map();   // "id|cat|rayon" -> [POI]
+function spType(t){
+  if (t.amenity === "toilets") return { type:"Toilettes", emo:"🚻" };
+  if (t.amenity === "drinking_water") return { type:"Eau potable", emo:"🚰" };
+  if (t.tourism === "picnic_site" || t.leisure === "picnic_table") return { type:"Pique-nique", emo:"🧺" };
+  if (t.amenity === "restaurant") return { type:"Restaurant" + (t.cuisine ? " · " + t.cuisine.replace(/[_;]/g," ") : ""), emo:"🍴" };
+  if (t.amenity === "cafe") return { type:"Café", emo:"☕" };
+  if (t.amenity === "fast_food") return { type:"Fast-food", emo:"🍔" };
+  if (t.amenity === "bar" || t.amenity === "pub" || t.amenity === "biergarten") return { type:"Bar / pub", emo:"🍺" };
+  if (t.shop === "bakery") return { type:"Boulangerie", emo:"🥐" };
+  if (t.shop === "supermarket") return { type:"Supermarché", emo:"🛒" };
+  if (t.shop === "convenience") return { type:"Épicerie", emo:"🛒" };
+  if (t.shop === "deli") return { type:"Traiteur", emo:"🧀" };
+  if (t.shop === "greengrocer") return { type:"Primeur", emo:"🥬" };
+  if (t.shop === "butcher") return { type:"Boucherie", emo:"🥩" };
+  if (t.tourism === "museum") return { type:"Musée", emo:"🏛️" };
+  if (t.tourism === "gallery") return { type:"Galerie", emo:"🖼️" };
+  if (t.tourism === "artwork") return { type:"Œuvre d'art", emo:"🎨" };
+  if (t.tourism === "viewpoint") return { type:"Point de vue", emo:"👁️" };
+  if (t.tourism === "attraction") return { type:"Attraction", emo:"⭐" };
+  if (t.natural === "peak") return { type:"Sommet", emo:"⛰️" };
+  if (t.amenity === "place_of_worship" || t.historic === "church") return { type:"Église / lieu de culte", emo:"⛪" };
+  if (t.historic === "castle") return { type:"Château", emo:"🏰" };
+  if (t.historic === "ruins") return { type:"Ruines", emo:"🏚️" };
+  if (t.historic === "monument" || t.historic === "memorial") return { type:"Monument", emo:"🗿" };
+  return { type:"Point d'intérêt", emo:"📍" };
+}
+function fmtDist(m){ return m < 1000 ? m + " m" : (m/1000).toFixed(1).replace(".", ",") + " km"; }
+function fmtDistShort(r){ return r < 1000 ? r + " m" : (r/1000) + " km"; }
+async function fetchOverpass(cat, lat, lng, r){
+  const parts = SP_CATS[cat].q.split(";").filter(Boolean);
+  const body = parts.map(p => `${p}(around:${r},${lat},${lng});`).join("");
+  const ql = `[out:json][timeout:25];(${body});out center 80;`;
+  const ctrl = new AbortController();
+  const to = setTimeout(() => ctrl.abort(), 20000);
+  try{
+    const resp = await fetch(OVERPASS, { method:"POST", body:"data=" + encodeURIComponent(ql), headers:{"Content-Type":"application/x-www-form-urlencoded"}, signal:ctrl.signal });
+    if (!resp.ok) throw new Error("overpass " + resp.status);
+    const j = await resp.json();
+    const home = { lat, lng };
+    return (j.elements || []).map(el => {
+      const la = el.lat != null ? el.lat : (el.center && el.center.lat);
+      const lo = el.lon != null ? el.lon : (el.center && el.center.lon);
+      if (la == null || lo == null) return null;
+      const t = el.tags || {};
+      return Object.assign({ name: t.name || "", lat: la, lng: lo, dist: Math.round(hav(home, [la, lo]) * 1000) }, spType(t));
+    }).filter(Boolean)
+      .filter((p, i, a) => a.findIndex(q => q.name === p.name && Math.abs(q.lat - p.lat) < 1e-4 && Math.abs(q.lng - p.lng) < 1e-4) === i)
+      .sort((a, b) => a.dist - b.dist);
+  } finally { clearTimeout(to); }
+}
+function renderSurPlace(res, list, r){
+  if (!list.length){
+    res.innerHTML = `<p class="spmsg">Rien dans un rayon de ${fmtDistShort(r)}.` + (r < 5000 ? ` <button data-sp-wide="5000">Élargir à 5 km</button>` : "") + `</p>`;
+    return;
+  }
+  res.innerHTML = list.slice(0, 14).map(p => {
+    const maps = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent((p.name ? p.name + " " : "") + p.lat + "," + p.lng);
+    return `<a class="sprow" href="${maps}" target="_blank" rel="noopener">
+      <span class="spemo">${p.emo}</span>
+      <span class="spt">${esc(p.name || p.type)}<small>${esc(p.name ? p.type : "")}</small></span>
+      <span class="spd">${fmtDist(p.dist)}</span>
+    </a>`;
+  }).join("") + (list.length > 14 ? `<p class="spmsg">… et ${list.length - 14} autres, plus loin.</p>` : "");
+}
+async function loadSurPlace(chip, radius){
+  const wrap = chip.closest(".surplace");
+  const id = wrap.dataset.sp;
+  const it = allItems().find(o => String(o.i) === String(id));
+  if (!it || !it.x) return;
+  const cat = chip.dataset.spCat;
+  const res = wrap.querySelector(".spres");
+  wrap.querySelectorAll(".spchip").forEach(c => c.classList.toggle("on", c === chip));
+  const r = radius || 1500;
+  if (!navigator.onLine){ res.innerHTML = `<p class="spmsg">Hors ligne — « Sur place » a besoin d'une connexion.</p>`; return; }
+  const key = id + "|" + cat + "|" + r;
+  if (spCache.has(key)){ renderSurPlace(res, spCache.get(key), r); return; }
+  res.innerHTML = `<p class="spmsg">Recherche autour du lieu…</p>`;
+  try{
+    const list = await fetchOverpass(cat, it.x[0], it.x[1], r);
+    spCache.set(key, list);
+    renderSurPlace(res, list, r);
+  }catch(e){
+    res.innerHTML = `<p class="spmsg">Service momentanément indisponible. <button data-sp-retry="1">Réessayer</button></p>`;
+  }
+}
+
 /* ================= photos (IndexedDB) ================= */
 let _db = null;
 function db(){
@@ -1194,6 +1305,11 @@ function card(it){
       <div class="photos" data-ph="${it.i}"></div>
       ${near.length ? `<label>À proximité, à combiner</label><div class="nearrow">${near.map(e =>
         `<button class="near" data-n="${e.o.i}">${CATS[e.o.c][0]} ${esc(e.o.t)} · ${e.km} km</button>`).join("")}</div>` : ""}
+      ${it.x ? `<label>🧭 Sur place — d'après OpenStreetMap</label>
+      <div class="surplace" data-sp="${it.i}">
+        <div class="spchips">${Object.keys(SP_CATS).map(k => `<button class="spchip" data-sp-cat="${k}">${SP_CATS[k].emo} ${SP_CATS[k].label}</button>`).join("")}</div>
+        <div class="spres"></div>
+      </div>` : ""}
       <div class="prow">
         <button class="onmap">🗺️ Sur la carte</button>
         <button class="addph">📷 Photos</button>
@@ -1369,6 +1485,16 @@ document.getElementById("list").addEventListener("click", e => {
   if (up){ window.S100.open(up.dataset.i); return; }
   const nearBtn = e.target.closest(".near");
   if (nearBtn){ window.S100.open(nearBtn.dataset.n); return; }
+  const spChip = e.target.closest(".spchip");
+  if (spChip){
+    if (spChip.classList.contains("on")){ spChip.classList.remove("on"); spChip.closest(".surplace").querySelector(".spres").innerHTML = ""; }
+    else loadSurPlace(spChip);
+    return;
+  }
+  const spWide = e.target.closest("[data-sp-wide]");
+  if (spWide){ const c = spWide.closest(".surplace").querySelector(".spchip.on"); if (c) loadSurPlace(c, +spWide.dataset.spWide); return; }
+  const spRetry = e.target.closest("[data-sp-retry]");
+  if (spRetry){ const c = spRetry.closest(".surplace").querySelector(".spchip.on"); if (c) loadSurPlace(c); return; }
 
   const cardEl = e.target.closest(".card"); if (!cardEl) return;
   const id = isNaN(+cardEl.dataset.i) ? cardEl.dataset.i : +cardEl.dataset.i;

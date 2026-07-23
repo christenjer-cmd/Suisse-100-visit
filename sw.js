@@ -1,5 +1,5 @@
 /* Suisse 100 — service worker : app utilisable hors ligne (sauf tuiles de carte) */
-const VERSION = "s100-v10";
+const VERSION = "s100-v11";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
@@ -24,6 +24,7 @@ self.addEventListener("fetch", e => {
   // API des transports et météo : toujours en direct, jamais en cache
   if (url.hostname.endsWith("transport.opendata.ch")) return;
   if (url.hostname.endsWith("open-meteo.com")) return;
+  if (url.hostname.endsWith("overpass-api.de")) return;
 
   // App + polices + Leaflet : cache d'abord, mise à jour en arrière-plan
   e.respondWith(
