@@ -1,5 +1,5 @@
 /* Suisse 100 — service worker : app utilisable hors ligne (sauf tuiles de carte) */
-const VERSION = "s100-v11";
+const VERSION = "s100-v12";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {

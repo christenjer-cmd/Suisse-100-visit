@@ -248,6 +248,9 @@ h1 em{font-style:italic;color:var(--red)}
 .spd{font-size:12px;color:var(--red);font-weight:700;white-space:nowrap}
 .spmsg{font-size:12.5px;color:var(--mut);padding:10px 4px}
 .spmsg button{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;font-weight:600;margin-left:4px}
+.spgrp{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);margin:13px 0 2px;display:flex;align-items:center;gap:6px}
+.spgrp small{margin-left:auto;background:var(--soft);border-radius:999px;padding:1px 8px;font-size:10.5px;letter-spacing:0}
+.spmore{font-size:12px;color:var(--mut);padding:5px 4px 0}
 
 /* ---- bilan ---- */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0}
@@ -930,14 +933,15 @@ async function fetchWx(list){
 
 /* ================= « Sur place » : POI OpenStreetMap autour d'un lieu (Overpass) ================= */
 const OVERPASS = "https://overpass-api.de/api/interpreter";
-const SP_CATS = {
-  utile:   { emo:"🚻", label:"Utile",   q:'nwr["amenity"~"^(toilets|drinking_water)$"];nwr["tourism"="picnic_site"];nwr["leisure"="picnic_table"]' },
-  manger:  { emo:"🍴", label:"Manger",  q:'nwr["amenity"~"^(restaurant|cafe|fast_food|bar|pub|biergarten)$"]' },
-  courses: { emo:"🛒", label:"Courses", q:'nwr["shop"~"^(bakery|supermarket|convenience|deli|greengrocer|butcher)$"]' },
-  culture: { emo:"🏛️", label:"Culture", q:'nwr["tourism"~"^(museum|gallery|artwork)$"];nwr["amenity"="place_of_worship"];nwr["historic"~"^(castle|monument|memorial|ruins|church)$"]' },
-  voir:    { emo:"👁️", label:"À voir",  q:'nwr["tourism"~"^(viewpoint|attraction)$"];nwr["natural"="peak"]' }
-};
-const spCache = new Map();   // "id|cat|rayon" -> [POI]
+const spCache = new Map();     // "id|all|rayon" -> [POI]
+const spLoading = new Set();   // clés en cours de chargement (évite les doublons)
+function spGroup(t){
+  if (t.shop) return "courses";
+  if (t.amenity === "toilets" || t.amenity === "drinking_water" || t.tourism === "picnic_site" || t.leisure === "picnic_table") return "utile";
+  if (t.amenity === "restaurant" || t.amenity === "cafe" || t.amenity === "fast_food" || t.amenity === "bar" || t.amenity === "pub" || t.amenity === "biergarten") return "manger";
+  if (t.tourism === "viewpoint" || t.tourism === "attraction" || t.natural === "peak") return "voir";
+  return "culture";
+}
 function spType(t){
   if (t.amenity === "toilets") return { type:"Toilettes", emo:"🚻" };
   if (t.amenity === "drinking_water") return { type:"Eau potable", emo:"🚰" };
@@ -966,62 +970,87 @@ function spType(t){
 }
 function fmtDist(m){ return m < 1000 ? m + " m" : (m/1000).toFixed(1).replace(".", ",") + " km"; }
 function fmtDistShort(r){ return r < 1000 ? r + " m" : (r/1000) + " km"; }
-async function fetchOverpass(cat, lat, lng, r){
-  const parts = SP_CATS[cat].q.split(";").filter(Boolean);
-  const body = parts.map(p => `${p}(around:${r},${lat},${lng});`).join("");
-  const ql = `[out:json][timeout:25];(${body});out center 80;`;
-  const ctrl = new AbortController();
-  const to = setTimeout(() => ctrl.abort(), 20000);
-  try{
-    const resp = await fetch(OVERPASS, { method:"POST", body:"data=" + encodeURIComponent(ql), headers:{"Content-Type":"application/x-www-form-urlencoded"}, signal:ctrl.signal });
-    if (!resp.ok) throw new Error("overpass " + resp.status);
-    const j = await resp.json();
-    const home = { lat, lng };
-    return (j.elements || []).map(el => {
-      const la = el.lat != null ? el.lat : (el.center && el.center.lat);
-      const lo = el.lon != null ? el.lon : (el.center && el.center.lon);
-      if (la == null || lo == null) return null;
-      const t = el.tags || {};
-      return Object.assign({ name: t.name || "", lat: la, lng: lo, dist: Math.round(hav(home, [la, lo]) * 1000) }, spType(t));
-    }).filter(Boolean)
-      .filter((p, i, a) => a.findIndex(q => q.name === p.name && Math.abs(q.lat - p.lat) < 1e-4 && Math.abs(q.lng - p.lng) < 1e-4) === i)
-      .sort((a, b) => a.dist - b.dist);
-  } finally { clearTimeout(to); }
+async function overpassCall(ql, lat, lng){
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++){          // réessais auto : Overpass renvoie souvent des 504 passagers
+    if (attempt) await new Promise(r => setTimeout(r, 1200 * attempt));
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 18000);
+    try{
+      const resp = await fetch(OVERPASS, { method:"POST", body:"data=" + encodeURIComponent(ql), headers:{"Content-Type":"application/x-www-form-urlencoded"}, signal:ctrl.signal });
+      if (!resp.ok) throw new Error("overpass " + resp.status);
+      const j = await resp.json();
+      const home = { lat, lng };
+      return (j.elements || []).map(el => {
+        const la = el.lat != null ? el.lat : (el.center && el.center.lat);
+        const lo = el.lon != null ? el.lon : (el.center && el.center.lon);
+        if (la == null || lo == null) return null;
+        const t = el.tags || {};
+        return Object.assign({ name: t.name || "", grp: spGroup(t), lat: la, lng: lo, dist: Math.round(hav(home, [la, lo]) * 1000) }, spType(t));
+      }).filter(Boolean)
+        .filter((p, i, a) => a.findIndex(q => q.name === p.name && Math.abs(q.lat - p.lat) < 1e-4 && Math.abs(q.lng - p.lng) < 1e-4) === i)
+        .sort((a, b) => a.dist - b.dist);
+    }catch(e){ lastErr = e; }
+    finally{ clearTimeout(to); }
+  }
+  throw lastErr;
 }
-function renderSurPlace(res, list, r){
+function fetchOverpassAll(lat, lng, r){
+  const A = `(around:${r},${lat},${lng})`;
+  const ql = `[out:json][timeout:25];(` +
+    `nwr["amenity"~"^(toilets|drinking_water|restaurant|cafe|fast_food|bar|pub|biergarten|place_of_worship)$"]${A};` +
+    `nwr["tourism"~"^(picnic_site|museum|gallery|artwork|viewpoint|attraction)$"]${A};` +
+    `nwr["leisure"="picnic_table"]${A};` +
+    `nwr["shop"~"^(bakery|supermarket|convenience|deli|greengrocer|butcher)$"]${A};` +
+    `nwr["historic"~"^(castle|monument|memorial|ruins|church)$"]${A};` +
+    `nwr["natural"="peak"]${A};` +
+    `);out center 200;`;
+  return overpassCall(ql, lat, lng);
+}
+const SP_ORDER = [["utile","🚻","Utile (WC, eau, pique-nique)"],["manger","🍴","Manger"],["courses","🛒","Courses"],["culture","🏛️","Culture & sites"],["voir","👁️","Points de vue & nature"]];
+function spRow(p){
+  const maps = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent((p.name ? p.name + " " : "") + p.lat + "," + p.lng);
+  return `<a class="sprow" href="${maps}" target="_blank" rel="noopener">
+    <span class="spemo">${p.emo}</span>
+    <span class="spt">${esc(p.name || p.type)}<small>${esc(p.name ? p.type : "")}</small></span>
+    <span class="spd">${fmtDist(p.dist)}</span>
+  </a>`;
+}
+function renderSurPlaceGrouped(res, list, r){
   if (!list.length){
-    res.innerHTML = `<p class="spmsg">Rien dans un rayon de ${fmtDistShort(r)}.` + (r < 5000 ? ` <button data-sp-wide="5000">Élargir à 5 km</button>` : "") + `</p>`;
+    res.innerHTML = `<p class="spmsg">Rien trouvé dans ${fmtDistShort(r)} autour d'ici.` + (r < 5000 ? ` <button data-sp-wide="5000">Chercher plus loin (5 km)</button>` : "") + `</p>`;
     return;
   }
-  res.innerHTML = list.slice(0, 14).map(p => {
-    const maps = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent((p.name ? p.name + " " : "") + p.lat + "," + p.lng);
-    return `<a class="sprow" href="${maps}" target="_blank" rel="noopener">
-      <span class="spemo">${p.emo}</span>
-      <span class="spt">${esc(p.name || p.type)}<small>${esc(p.name ? p.type : "")}</small></span>
-      <span class="spd">${fmtDist(p.dist)}</span>
-    </a>`;
-  }).join("") + (list.length > 14 ? `<p class="spmsg">… et ${list.length - 14} autres, plus loin.</p>` : "");
+  let html = "";
+  for (const [g, emo, lab] of SP_ORDER){
+    const grp = list.filter(p => p.grp === g);
+    if (!grp.length) continue;
+    html += `<div class="spgrp">${emo} ${lab}<small>${grp.length}</small></div>`;
+    html += grp.slice(0, 6).map(spRow).join("");
+    if (grp.length > 6) html += `<p class="spmore">… et ${grp.length - 6} autres, plus loin</p>`;
+  }
+  res.innerHTML = html;
 }
-async function loadSurPlace(chip, radius){
-  const wrap = chip.closest(".surplace");
-  const id = wrap.dataset.sp;
+function loadSP(id, r){
+  const res = document.querySelector(`.card.open[data-i="${id}"] .spres`);
+  if (!res) return;
   const it = allItems().find(o => String(o.i) === String(id));
   if (!it || !it.x) return;
-  const cat = chip.dataset.spCat;
-  const res = wrap.querySelector(".spres");
-  wrap.querySelectorAll(".spchip").forEach(c => c.classList.toggle("on", c === chip));
-  const r = radius || 1500;
-  if (!navigator.onLine){ res.innerHTML = `<p class="spmsg">Hors ligne — « Sur place » a besoin d'une connexion.</p>`; return; }
-  const key = id + "|" + cat + "|" + r;
-  if (spCache.has(key)){ renderSurPlace(res, spCache.get(key), r); return; }
-  res.innerHTML = `<p class="spmsg">Recherche autour du lieu…</p>`;
-  try{
-    const list = await fetchOverpass(cat, it.x[0], it.x[1], r);
-    spCache.set(key, list);
-    renderSurPlace(res, list, r);
-  }catch(e){
-    res.innerHTML = `<p class="spmsg">Service momentanément indisponible. <button data-sp-retry="1">Réessayer</button></p>`;
-  }
+  if (!navigator.onLine){ res.innerHTML = `<p class="spmsg">Hors ligne — les lieux alentour s'afficheront avec une connexion.</p>`; return; }
+  const key = id + "|all|" + r;
+  if (spCache.has(key)){ renderSurPlaceGrouped(res, spCache.get(key), r); return; }
+  res.innerHTML = `<p class="spmsg">🧭 Recherche des lieux autour…</p>`;
+  if (spLoading.has(key)) return;
+  spLoading.add(key);
+  fetchOverpassAll(it.x[0], it.x[1], r)
+    .then(list => { spCache.set(key, list); const live = document.querySelector(`.card.open[data-i="${id}"] .spres`); if (live) renderSurPlaceGrouped(live, list, r); })
+    .catch(() => { const live = document.querySelector(`.card.open[data-i="${id}"] .spres`); if (live) live.innerHTML = `<p class="spmsg">Lieux indisponibles pour l'instant. <button data-sp-retry="1">Réessayer</button></p>`; })
+    .finally(() => spLoading.delete(key));
+}
+function mountSurPlace(){
+  if (lastOpenId == null) return;
+  const card = document.querySelector(`.card.open[data-i="${lastOpenId}"]`);
+  if (card && card.querySelector(".surplace")) loadSP(String(lastOpenId), 1500);
 }
 
 /* ================= photos (IndexedDB) ================= */
@@ -1267,6 +1296,7 @@ function renderList(items){
   list.innerHTML = html || `<p class="empty">Rien ne correspond — essayez d’élargir les filtres.</p>`;
   hydratePhotos();
   mountMini();
+  mountSurPlace();
 }
 
 function card(it){
@@ -1305,11 +1335,8 @@ function card(it){
       <div class="photos" data-ph="${it.i}"></div>
       ${near.length ? `<label>À proximité, à combiner</label><div class="nearrow">${near.map(e =>
         `<button class="near" data-n="${e.o.i}">${CATS[e.o.c][0]} ${esc(e.o.t)} · ${e.km} km</button>`).join("")}</div>` : ""}
-      ${it.x ? `<label>🧭 Sur place — d'après OpenStreetMap</label>
-      <div class="surplace" data-sp="${it.i}">
-        <div class="spchips">${Object.keys(SP_CATS).map(k => `<button class="spchip" data-sp-cat="${k}">${SP_CATS[k].emo} ${SP_CATS[k].label}</button>`).join("")}</div>
-        <div class="spres"></div>
-      </div>` : ""}
+      ${it.x ? `<label>🧭 Sur place — autour du lieu (OpenStreetMap)</label>
+      <div class="surplace" data-sp="${it.i}"><div class="spres"><p class="spmsg">🧭 Recherche des lieux autour…</p></div></div>` : ""}
       <div class="prow">
         <button class="onmap">🗺️ Sur la carte</button>
         <button class="addph">📷 Photos</button>
@@ -1485,16 +1512,10 @@ document.getElementById("list").addEventListener("click", e => {
   if (up){ window.S100.open(up.dataset.i); return; }
   const nearBtn = e.target.closest(".near");
   if (nearBtn){ window.S100.open(nearBtn.dataset.n); return; }
-  const spChip = e.target.closest(".spchip");
-  if (spChip){
-    if (spChip.classList.contains("on")){ spChip.classList.remove("on"); spChip.closest(".surplace").querySelector(".spres").innerHTML = ""; }
-    else loadSurPlace(spChip);
-    return;
-  }
   const spWide = e.target.closest("[data-sp-wide]");
-  if (spWide){ const c = spWide.closest(".surplace").querySelector(".spchip.on"); if (c) loadSurPlace(c, +spWide.dataset.spWide); return; }
+  if (spWide){ const c = spWide.closest(".card"); if (c) loadSP(c.dataset.i, +spWide.dataset.spWide); return; }
   const spRetry = e.target.closest("[data-sp-retry]");
-  if (spRetry){ const c = spRetry.closest(".surplace").querySelector(".spchip.on"); if (c) loadSurPlace(c); return; }
+  if (spRetry){ const c = spRetry.closest(".card"); if (c) loadSP(c.dataset.i, 1500); return; }
 
   const cardEl = e.target.closest(".card"); if (!cardEl) return;
   const id = isNaN(+cardEl.dataset.i) ? cardEl.dataset.i : +cardEl.dataset.i;
@@ -1524,6 +1545,7 @@ document.getElementById("list").addEventListener("click", e => {
   else { openCards.delete(String(id)); if (lastOpenId === String(id)) lastOpenId = null; }
   hydratePhotos();
   mountMini();
+  mountSurPlace();
 });
 document.getElementById("list").addEventListener("input", e => {
   const cardEl = e.target.closest(".card"); if (!cardEl) return;
