@@ -245,7 +245,8 @@ const wxSunny = w => !!w && w.c <= 1 && !(w.pp >= 40);
 const wxGrey = w => !!w && (w.c === 3 || w.c === 45 || w.c === 48);
 
 /* --- « Sur place » : lieux utiles autour (OpenStreetMap via Overpass) --- */
-const OVERPASS = "https://overpass-api.de/api/interpreter";
+/* serveur suisse d'abord (rapide, couvre tout le pays), serveur mondial en secours */
+const OVERPASS = ["https://overpass.osm.ch/api/interpreter", "https://overpass-api.de/api/interpreter"];
 const spCache = new Map(), spLoading = new Set();
 function spGroup(t){
   if (t.shop) return "courses";
@@ -291,10 +292,10 @@ async function overpassAll(lat, lng, r){
     + `nwr["natural"="peak"]${A};`
     + `);out center 200;`;
   let lastErr;
-  for (let attempt = 0; attempt < 3; attempt++){            // Overpass renvoie souvent des 504 passagers
-    if (attempt) await new Promise(res => setTimeout(res, 1200 * attempt));
+  for (let attempt = 0; attempt < 4; attempt++){            // les serveurs Overpass ont souvent des pannes passagères
+    if (attempt > 1) await new Promise(res => setTimeout(res, 1200 * attempt));
     try {
-      const j = await fetchJSON(OVERPASS, { method: "POST", body: "data=" + encodeURIComponent(ql), headers: { "Content-Type": "application/x-www-form-urlencoded" } }, 18000);
+      const j = await fetchJSON(OVERPASS[attempt % OVERPASS.length], { method: "POST", body: "data=" + encodeURIComponent(ql), headers: { "Content-Type": "application/x-www-form-urlencoded" } }, 15000);
       const from = { lat, lng };
       return (j.elements || []).map(el => {
         const la = el.lat != null ? el.lat : (el.center && el.center.lat);
