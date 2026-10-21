@@ -521,6 +521,20 @@ const STATIONS = [
   ["Sion",46.227,7.359],["St-Gall",47.423,9.370],["Thoune",46.755,7.630],["Winterthour",47.500,8.724],
   ["Yverdon-les-Bains",46.782,6.641],["Zoug",47.174,8.515],["Zurich",47.378,8.540]
 ];
+/* Villes-étapes pour dormir pendant un week-end (gare, hôtels, bien reliées) */
+const BASES = [
+  ["Lugano",46.005,8.951],["Locarno",46.170,8.799],["Bellinzone",46.195,9.024],["Mendrisio",45.870,8.981],
+  ["St-Moritz",46.498,9.840],["Pontresina",46.492,9.903],["Scuol",46.797,10.298],["Coire",46.850,9.532],
+  ["Davos",46.802,9.836],["Flims",46.836,9.284],["Poschiavo",46.325,10.059],["Bergün",46.630,9.746],["Thusis",46.698,9.440],
+  ["Zermatt",46.020,7.749],["Brigue",46.317,7.988],["Sion",46.231,7.359],["Martigny",46.103,7.073],
+  ["Loèche-les-Bains",46.379,7.627],["Saas-Fee",46.109,7.927],["Fiesch",46.400,8.135],["Grimentz",46.179,7.574],
+  ["Interlaken",46.686,7.863],["Grindelwald",46.624,8.041],["Lauterbrunnen",46.593,7.909],["Kandersteg",46.495,7.674],
+  ["Meiringen",46.727,8.188],["Gstaad",46.475,7.286],["Thoune",46.759,7.628],["Lucerne",47.050,8.307],
+  ["Engelberg",46.820,8.401],["Andermatt",46.635,8.594],["Brunnen",46.994,8.606],["St-Gall",47.424,9.376],
+  ["Appenzell",47.331,9.409],["Glaris",47.040,9.068],["Walenstadt",47.123,9.312],["Schaffhouse",47.696,8.634],
+  ["Bâle",47.558,7.588],["Zurich",47.377,8.540],["Montreux",46.433,6.911],["Lausanne",46.520,6.633],
+  ["Genève",46.204,6.143],["Gruyères",46.584,7.082],["Château-d’Œx",46.475,7.130],["Morat",46.928,7.117]
+];
 /* Ancien ordre (v1–v12) : sert à migrer le point de départ déjà choisi dans « Demain ? » */
 const STATIONS_V1 = [
   ["Bâle",47.547,7.590],["Berne",46.949,7.439],["Bienne",47.133,7.243],["Coire",46.853,9.529],

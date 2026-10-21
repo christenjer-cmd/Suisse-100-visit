@@ -39,7 +39,7 @@ function estMin(from, it){                                  // estimation porte-
 
 /* ================= état (localStorage, compatible avec les versions 1 à 12) ================= */
 const KEY = "suisse100_v1";
-const VERSION = "13";
+const VERSION = "14";
 const START = parseYmd("2026-07-16"), END = parseYmd("2028-07-16"), GOAL = 100;
 const DEFAULT_HOME = { name: "La Chaux-de-Fonds", lat: 47.100, lng: 6.826 };
 let state = loadJSON(KEY, {});
@@ -494,7 +494,22 @@ function defaultOutingDate(){                               // le week-end par d
   if (wd === 6 || wd === 0) return ymd(t);
   return ymd(addDays(t, 6 - wd));
 }
-const dec = { date: defaultOutingDate(), dur: state.dec.dur || 120, moods: new Set(state.dec.moods || []), jit: new Map() };
+const dec = { mode: state.dec.mode === "wk" ? "wk" : "day", date: defaultOutingDate(), dur: state.dec.dur || 120,
+  wk: null, wkDur: state.dec.wkDur || 240, moods: new Set(state.dec.moods || []), jit: new Map() };
+const WK_DURS = [[120, "≤ 2 h"], [180, "≤ 3 h"], [240, "≤ 4 h"], [600, "Peu importe"]];
+function weekendOptions(){                                  // samedis des 4 prochains week-ends
+  const t = new Date(), wd = t.getDay(), sat = addDays(t, wd === 6 ? 0 : wd === 0 ? 6 : 6 - wd), out = [];
+  for (let i = 0; i < 4; i++){
+    const a = addDays(sat, 7 * i), b = addDays(a, 1);
+    out.push({ k: ymd(a), l: i === 0 ? "Ce week-end" : i === 1 ? "Le suivant" : a.getDate() + "–" + b.getDate() + " " + MOIS[b.getMonth()] });
+  }
+  return out;
+}
+const dayName = d => { const s = d.toLocaleDateString("fr-CH", { weekday: "long" }); return s.charAt(0).toUpperCase() + s.slice(1); };
+function wkRange(d1s){                                      // « 24–25 octobre » ou « 31 octobre – 1 novembre »
+  const a = parseYmd(d1s), b = addDays(a, 1), mo = d => d.toLocaleDateString("fr-CH", { month: "long" });
+  return a.getMonth() === b.getMonth() ? `${a.getDate()}–${b.getDate()} ${mo(b)}` : `${a.getDate()} ${mo(a)} – ${b.getDate()} ${mo(b)}`;
+}
 function whenOptions(){
   const t = new Date(), opts = [{ k: ymd(t), l: "Aujourd’hui" }, { k: ymd(addDays(t, 1)), l: "Demain" }];
   for (const wd of [6, 0]){
@@ -598,6 +613,16 @@ function nextOutingHTML(){
       <div class="meta">${fmtDay(d)}${m.time ? " · départ vers " + esc(m.time) : ""} · destination secrète 🤫</div>
       <div class="why"><span>🎒 Prévois : ${esc(packFor(it, null, d).slice(0, 3).map(stripEmoji).join(", "))}</span></div>${more}</div>`;
   }
+  const m = plannedMeta(it) || {};
+  if (m.wkid){                                              // un week-end prévu : toutes ses étapes ensemble
+    const wkItems = up.filter(o => (plannedMeta(o) || {}).wkid === m.wkid), rest = up.length - wkItems.length;
+    return `<div class="box next"><div class="kicker">🧳 Week-end · ${relDays(n)}</div>
+      <div class="ttl">${esc(m.wk || "Escapade")}</div>
+      <div class="meta">${fmtDay(d)}${m.time ? " · départ " + esc(m.time) : ""}</div>
+      <div class="nearrow" style="margin-top:9px">${wkItems.map(o => `<button class="near" data-act="open" data-i="${o.i}">${CATS[o.c][0]} ${esc(o.t)}</button>`).join("")}</div>
+      <div class="btnrow"><button class="btn primary sm" data-act="day" data-i="${it.i}" data-date="${d}">🗓️ Préparer le départ</button>
+        ${rest ? `<button class="link" data-go="souv">+ ${rest} autre${rest > 1 ? "s" : ""} sortie${rest > 1 ? "s" : ""}</button>` : ""}</div></div>`;
+  }
   const tr = travel(it);
   return `<div class="box next"><div class="kicker">Prochaine sortie · ${relDays(n)}</div>
     <div class="ttl">${CATS[it.c][0]} ${esc(it.t)}</div>
@@ -606,10 +631,16 @@ function nextOutingHTML(){
       <button class="btn sm" data-act="open" data-i="${it.i}">Fiche</button>${more}</div></div>`;
 }
 function deciderHTML(){
+  const wkm = dec.mode === "wk", wopts = weekendOptions();
+  if (!dec.wk || !wopts.some(o => o.k === dec.wk)) dec.wk = wopts[0].k;
   return `<div class="box decide" id="decide">
     <div class="boxhead"><h2 class="h">✨ On fait quoi ?</h2><button class="link" data-act="shuffle">🎲 D’autres idées</button></div>
-    <div class="row"><span>Quand</span><div class="chips" id="decWhen">${dateChips(dec.date, "data-when", "decDate")}</div></div>
-    <div class="row"><span>Trajet max (aller)</span><div class="chips" id="decDur">${DURS.map(([v, l]) => `<button class="chip${dec.dur === v ? " on" : ""}" data-dur="${v}">${l}</button>`).join("")}</div></div>
+    <div class="modeseg" id="decMode"><button data-mode="day" class="${wkm ? "" : "on"}">☀️ Une journée</button><button data-mode="wk" class="${wkm ? "on" : ""}">🧳 Un week-end</button></div>
+    ${wkm
+      ? `<div class="row"><span>Quel week-end</span><div class="chips" id="decWk">${wopts.map(o => `<button class="chip${o.k === dec.wk ? " on" : ""}" data-wk="${o.k}">${o.l}</button>`).join("")}</div></div>
+         <div class="row"><span>Trajet max jusqu’à l’étape</span><div class="chips" id="decWkDur">${WK_DURS.map(([v, l]) => `<button class="chip${dec.wkDur === v ? " on" : ""}" data-wkdur="${v}">${l}</button>`).join("")}</div></div>`
+      : `<div class="row"><span>Quand</span><div class="chips" id="decWhen">${dateChips(dec.date, "data-when", "decDate")}</div></div>
+         <div class="row"><span>Trajet max (aller)</span><div class="chips" id="decDur">${DURS.map(([v, l]) => `<button class="chip${dec.dur === v ? " on" : ""}" data-dur="${v}">${l}</button>`).join("")}</div></div>`}
     <div class="row"><span>Envie du jour</span><div class="chips wrapok" id="decMood">${MOODS.map(([k, l]) => `<button class="chip${dec.moods.has(k) ? " on" : ""}" data-mood="${k}">${l}</button>`).join("")}</div></div>
     <div class="fromline">Départ : <button data-act="editHome">${esc(home().name)} ✎</button></div>
     <p class="status" id="decStatus"></p>
@@ -624,8 +655,9 @@ function eventsHTML(){
       return `<div class="evrow" data-act="day" data-i="${e.it.i}" data-date="${ymd(on ? t0 : e.s)}">
         <div class="cal"><i>${MOIS[e.s.getMonth()]}</i><b>${e.s.getDate()}</b></div>
         <div class="m"><b>${esc(e.it.t)}</b><small>${esc(e.it.p || "")} · ${fmtWin(e)}${e.approx ? " ≈" : ""}${tr ? " · " + ttLabel(tr) : ""}</small></div>
-        <div class="r">${on ? "en cours !" : relDays(n)}</div></div>`; }).join("")}
-    <p class="sub" style="margin-top:8px">≈ date habituelle, à confirmer sur le programme officiel.</p></div>`;
+        <div class="r">${on ? "en cours !" : relDays(n)}</div>
+        <button class="bell" data-act="remind" data-i="${e.it.i}" aria-label="Me rappeler ${esc(e.it.t)}" title="Me rappeler (agenda)">🔔</button></div>`; }).join("")}
+    <p class="sub" style="margin-top:8px">🔔 = rappel dans votre agenda une semaine avant. ≈ date habituelle, à confirmer sur le programme officiel.</p></div>`;
 }
 function matchesHTML(){
   if (!hasNames()) return `<div class="box"><div class="boxhead"><h2 class="h">💞 À deux</h2></div>
@@ -644,6 +676,7 @@ function miniRow(it, right){
 /* --- « On fait quoi ? » : le moteur de suggestions --- */
 let decGen = 0;
 async function runDecider(){
+  if (dec.mode === "wk") return runWeekend();
   const gen = ++decGen, date = dec.date, d = parseYmd(date), H = home();
   const lastDone = allItems().filter(isDone).sort((a, b) => (state.done[b.i].date || "").localeCompare(state.done[a.i].date || ""))[0];
   const pool = [];
@@ -741,8 +774,165 @@ function suggCard(o, i){
     <div class="btnrow"><button class="btn primary sm" data-act="day" data-i="${it.i}" data-date="${dec.date}">🗓️ On y va</button>
       <button class="btn sm" data-act="open" data-i="${it.i}">Voir la fiche</button></div></div>`;
 }
+/* --- « Un week-end » : escapades de deux jours autour d'une ville-étape --- */
+let wkShown = [];
+async function runWeekend(){
+  const gen = ++decGen, d1s = dec.wk, d1 = parseYmd(d1s), d2 = addDays(d1, 1), d2s = ymd(d2), H = home();
+  const status = t => { const e = $("#decStatus"); if (e && gen === decGen) e.textContent = t; };
+  const pool = [];
+  for (const it of allItems()){
+    if (!it.x || isDone(it)) continue;
+    const pd = plannedDate(it);
+    if (pd && pd !== d1s && pd !== d2s) continue;
+    const ok1 = feasibleOn(it, d1), ok2 = feasibleOn(it, d2);
+    if (!ok1 && !ok2) continue;
+    const mv = myVote(it.i), ov = otherVote(it.i);
+    if (mv < 0 && ov < 0) continue;
+    const tr = travel(it);
+    if (tr.min > dec.wkDur + 40) continue;
+    if (!dec.jit.has(it.i)) dec.jit.set(it.i, Math.random() * 6);
+    const o = { it, tr, ev: isEventItem(it) ? (eventOn(it, d1) || eventOn(it, d2)) : null, mv, ov, pd, wx: null, ok1, ok2 };
+    scoreSugg(o, null, null);
+    o.s += tr.min / 9;                                        // en week-end, l'éloignement n'est pas un défaut
+    pool.push(o);
+  }
+  // une escapade = 3 à 4 idées à moins de 28 km les unes des autres, près d'une ville où dormir
+  const clusters = [];
+  const fromHome = o => hav(H, o.it.x);                      // ce qui se fait en une journée depuis chez vous n'a pas besoin d'une nuit
+  const far = pool.filter(o => fromHome(o) >= 45);
+  for (const a of far.filter(o => fromHome(o) >= 60).sort((x, y) => y.s - x.s).slice(0, 70)){
+    // l'étape la plus proche du lieu phare (plutôt que du centre du groupe : évite de dormir de l'autre côté d'une montagne)
+    const base = BASES.map(b => ({ b, km: hav({ lat: a.it.x[0], lng: a.it.x[1] }, [b[1], b[2]]) })).sort((x, y) => x.km - y.km)[0];
+    if (!base || base.km > 30) continue;
+    const bx = { lat: base.b[1], lng: base.b[2] };
+    const group = far.filter(o => hav({ lat: a.it.x[0], lng: a.it.x[1] }, o.it.x) <= 22 && hav(bx, o.it.x) <= 32).sort((x, y) => y.s - x.s);
+    if (group.length < 3) continue;
+    const day1 = [], day2 = [];
+    for (const o of group){
+      const c1 = o.ok1 && day1.length < 2, c2 = o.ok2 && day2.length < 2;
+      if (c1 && (!c2 || day1.length <= day2.length)) day1.push(o); else if (c2) day2.push(o);
+      if (day1.length === 2 && day2.length === 2) break;
+    }
+    const all = day1.concat(day2);
+    if (all.length < 3) continue;
+    const cx = [all.reduce((s, o) => s + o.it.x[0], 0) / all.length, all.reduce((s, o) => s + o.it.x[1], 0) / all.length];
+    const toBase = estMin(H, { x: [base.b[1], base.b[2]], c: "vil" });
+    if (toBase > dec.wkDur + 15 || hav(H, [base.b[1], base.b[2]]) < 55) continue;
+    clusters.push({ base: base.b, day1, day2, all, cx, toBase, real: false, w1: null, w2: null,
+      score: all.reduce((s, o) => s + o.s, 0) / all.length * 2 + all.length * 6 - toBase / 15 });
+  }
+  clusters.sort((a, b) => b.score - a.score);
+  const picked = [];
+  for (const c of clusters){
+    if (picked.some(p => p.base[0] === c.base[0] || hav({ lat: p.cx[0], lng: p.cx[1] }, c.cx) < 35)) continue;
+    picked.push(c);
+    if (picked.length === 6) break;
+  }
+  showWeekends(picked, gen);
+  if (!picked.length){ status(""); return; }
+  const ahead = dayDiff(new Date(), d1);
+  if (navigator.onLine && ahead >= 0 && ahead <= 14){
+    status("☁️ Météo du week-end…");
+    try {
+      const pts = picked.map(c => ({ lat: c.cx[0], lng: c.cx[1] }));
+      const [w1, w2] = await Promise.all([weatherFor(pts, d1s), weatherFor(pts, d2s)]);
+      if (gen !== decGen) return;
+      picked.forEach((c, i) => {
+        c.w1 = w1[i]; c.w2 = w2[i];
+        const sunny = [c.w1, c.w2].filter(wxSunny).length, rainy = [c.w1, c.w2].filter(wxRain).length;
+        c.score += sunny * 6 - rainy * c.all.filter(o => !isRainOk(o.it)).length * 3;
+      });
+      picked.sort((a, b) => b.score - a.score);
+      showWeekends(picked, gen);
+    } catch(e){}
+  }
+  if (navigator.onLine){
+    status("🚆 Horaires CFF…");
+    const from = await homeStation().catch(() => null);
+    if (from) await Promise.all(picked.slice(0, 3).map(async c => {
+      try {
+        const to = await stationNear(c.base[1], c.base[2], "b" + c.base[0]);
+        const cs = await connections(from, to, d1s, "08:00", 1);
+        if (cs[0] && cs[0].min != null){ c.toBase = cs[0].min; c.real = true; c.dep = cs[0]; }
+      } catch(e){}
+    }));
+    if (gen !== decGen) return;
+    showWeekends(picked, gen);
+  }
+  const nDest = new Set(clusters.map(c => c.base[0])).size;
+  status(`${nDest} destination${nDest > 1 ? "s" : ""} possible${nDest > 1 ? "s" : ""} · ${wkRange(d1s)}`
+    + (ahead > 14 ? " · météo disponible deux semaines avant" : ""));
+}
+function showWeekends(list, gen){
+  const el = $("#decRes");
+  if (!el || gen !== decGen) return;
+  wkShown = list.slice(0, 3);
+  el.innerHTML = wkShown.length ? wkShown.map(wkCard).join("")
+    : `<p class="empty">Pas d’escapade qui colle à ces critères. Allongez le trajet ou retirez une envie.</p>`;
+  focusable(el);
+}
+function wkLabel(c){ return "Autour de " + c.base[0]; }
+function wkCard(c, i){
+  const d1 = parseYmd(dec.wk), d2 = addDays(d1, 1), imgs = c.all.filter(o => imgOf(o.it)).slice(0, 2);
+  const nMatch = c.all.filter(o => o.mv > 0 && o.ov > 0).length, ev = c.all.find(o => o.ev);
+  const why = [nMatch ? `<span class="p">💞 ${nMatch} envie${nMatch > 1 ? "s" : ""} commune${nMatch > 1 ? "s" : ""}</span>` : "",
+    ev ? `<span class="p">🎉 ${esc(ev.it.t)}</span>` : "",
+    c.all.some(o => o.mv > 0 || o.ov > 0) && !nMatch ? `<span class="p">❤️ dans vos envies</span>` : "",
+    c.all.every(o => o.it.g === "inc") ? `<span class="g">🎫 tout inclus dans l’AG</span>` : ""].join("");
+  const row = (d, arr) => arr.length ? `<div class="day"><b>${dayName(d)}</b><span class="its">${arr.map(o => `<button data-act="open" data-i="${o.it.i}">${CATS[o.it.c][0]} ${esc(o.it.t)}</button>`).join("")}</span></div>` : "";
+  const wx = (lbl, w) => w ? ` · ${lbl} ${wxEmo(w.c)} ${w.tmax}°` : "";
+  return `<div class="wk">
+    <div class="wkimgs">${[0, 1].map(k => { const o = imgs[k] || c.all[k] || c.all[0];
+      return `<span style="background:${tint(o.it)}">${CATS[o.it.c][0]}${imgs[k] ? imgTag(imgSmall(imgOf(o.it))) : ""}</span>`; }).join("")}</div>
+    <div class="wkbody">
+      <div class="kicker">${i === 0 ? "🧳 Notre meilleure escapade" : "🧳 Escapade"} · dodo à ${esc(c.base[0])}</div>
+      <div class="t">${esc(wkLabel(c))}</div>
+      <div class="p">${c.real ? "🚆 " : "🚆 ~"}${fmtMin(c.toBase)} jusqu’à ${esc(c.base[0])}${c.dep ? " (départ " + hm(c.dep.dep) + ")" : ""}${wx("sam.", c.w1)}${wx("dim.", c.w2)}</div>
+      <div class="days">${row(d1, c.day1)}${row(d2, c.day2)}</div>
+      ${why ? `<div class="why">${why}</div>` : ""}
+      <div class="btnrow"><button class="btn primary sm" data-act="wkplan" data-k="${i}">📅 On le prévoit</button>
+        <button class="btn sm" data-act="wkshare" data-k="${i}">💬 Envoyer</button>
+        <button class="btn sm" data-act="wkics" data-k="${i}" aria-label="Ajouter à l’agenda">📆</button>
+        <a class="btn sm" href="https://www.google.com/maps/search/${encodeURIComponent("hôtel " + c.base[0])}" target="_blank" rel="noopener">🛏️ Dormir</a></div>
+    </div></div>`;
+}
+function wkText(c){
+  const d1 = parseYmd(dec.wk), d2 = addDays(d1, 1);
+  return [`🧳 Week-end Suisse 100 — ${wkRange(dec.wk)}`,
+    `📍 ${wkLabel(c)} (🚆 ${c.real ? "" : "~"}${fmtMin(c.toBase)} depuis ${home().name}${c.dep ? ", départ " + hm(c.dep.dep) : ""})`,
+    c.day1.length ? `${dayName(d1)} : ${c.day1.map(o => o.it.t).join(", ")}` : "",
+    c.day2.length ? `${dayName(d2)} : ${c.day2.map(o => o.it.t).join(", ")}` : "",
+    [c.w1 && `${wxEmo(c.w1.c)} sam. ${c.w1.tmax}°`, c.w2 && `${wxEmo(c.w2.c)} dim. ${c.w2.tmax}°`].filter(Boolean).join(" · "),
+    `🛏️ Dormir à ${c.base[0]}`, "— Suisse 100"].filter(Boolean).join("\n");
+}
+function wkPlan(c){
+  const d1s = dec.wk, d2s = ymd(addDays(parseYmd(d1s), 1)), wkid = "wk" + Date.now(), label = wkLabel(c);
+  for (const o of c.day1) setPlanned(o.it.i, d1s, { wk: label, wkid, time: c.dep ? hm(c.dep.dep) : "08:00" });
+  for (const o of c.day2) setPlanned(o.it.i, d2s, { wk: label, wkid });
+  refresh();
+  toast(`🧳 Week-end prévu : ${label}`, "Envoyer", () => shareText(wkText(c)), 6500);
+}
+function wkICS(c){
+  const s = parseYmd(dec.wk); s.setHours(0, 0, 0, 0);
+  saveICS(makeICS({ uid: "s100-wk-" + dec.wk + "-" + norm(c.base[0]).replace(/[^a-z]+/g, ""), title: "🧳 Week-end : " + wkLabel(c), location: c.base[0],
+    desc: wkText(c), start: s, end: addDays(s, 2), allDay: true,
+    alarms: [{ before: 2 * 1440 + 300, text: "Pensez à réserver où dormir à " + c.base[0] }, { before: 240, text: "Demain : week-end " + wkLabel(c).toLowerCase() }] }),
+    "suisse100-weekend-" + dec.wk + ".ics", "📆 Week-end dans l’agenda (ouvrez le fichier) — rappels le mercredi et la veille");
+}
+async function shareText(text){
+  try { if (navigator.share){ await navigator.share({ text }); return; } }
+  catch(e){ if (e && e.name === "AbortError") return; }
+  try { await navigator.clipboard.writeText(text); toast("📋 Copié — collez-le dans votre messagerie"); }
+  catch(e){ prompt("Copiez le texte :", text); }
+}
+
 $("#v-home").addEventListener("click", e => {
   const w = e.target.closest("[data-when]"), du = e.target.closest("[data-dur]"), mo = e.target.closest("[data-mood]");
+  const md = e.target.closest("[data-mode]"), wk = e.target.closest("[data-wk]"), wd = e.target.closest("[data-wkdur]");
+  if (md){ if (dec.mode !== md.dataset.mode){ dec.mode = md.dataset.mode; state.dec.mode = dec.mode; save();
+    $("#decide").outerHTML = deciderHTML(); runDecider(); } return; }
+  if (wk){ dec.wk = wk.dataset.wk; $$("#decWk .chip").forEach(c => c.classList.toggle("on", c === wk)); runDecider(); return; }
+  if (wd){ dec.wkDur = +wd.dataset.wkdur; state.dec.wkDur = dec.wkDur; save(); $$("#decWkDur .chip").forEach(c => c.classList.toggle("on", c === wd)); runDecider(); return; }
   if (w){ dec.date = w.dataset.when; $("#decWhen").innerHTML = dateChips(dec.date, "data-when", "decDate"); runDecider(); }
   else if (du){ dec.dur = +du.dataset.dur; state.dec.dur = dec.dur; save(); $$("#decDur .chip").forEach(c => c.classList.toggle("on", c === du)); runDecider(); }
   else if (mo){ const k = mo.dataset.mood; dec.moods.has(k) ? dec.moods.delete(k) : dec.moods.add(k); state.dec.moods = [...dec.moods]; save(); mo.classList.toggle("on"); runDecider(); }
@@ -922,8 +1112,10 @@ function renderSheet(){
         ${isRainOk(it) ? `<span class="badge">☔ ok s’il pleut</span>` : ""}${isRomantic(it) ? `<span class="badge v">💕 romantique</span>` : ""}
       </div>
       <p class="d">${esc(it.d || "")}</p>
-      ${src ? `<p class="credit">📷 Photo et plus d’infos : <a href="${esc(src.href)}" target="_blank" rel="noopener">${esc(src.label)}</a></p>` : ""}
-      ${ev ? `<div class="evnote">🎉 Prochaine édition : ${fmtWin(ev)}${ev.approx ? " (date habituelle, à vérifier)" : ""}${ev.note ? " — " + esc(ev.note) : ""}</div>` : ""}
+      ${src ? `<p class="credit">📷 Photo : <a href="${esc(src.href)}" target="_blank" rel="noopener">${esc(src.label)}</a></p>` : ""}
+      ${ev ? `<div class="evnote">🎉 Prochaine édition : ${fmtWin(ev)}${ev.approx ? " (date habituelle, à vérifier)" : ""}${ev.note ? " — " + esc(ev.note) : ""}
+        <div class="btnrow" style="margin-top:8px"><button class="btn sm" data-act="remind" data-i="${it.i}">🔔 Me rappeler</button></div></div>` : ""}
+      ${IMAGES[it.i] && IMAGES[it.i][2] !== "commons" ? `<div class="part" id="wiki-${it.i}"></div>` : ""}
       ${it.x ? `<div class="minimap" id="miniSlot" title="Voir sur la grande carte"></div>` : ""}
       <div class="btnrow">
         <button class="btn primary sm" data-act="day" data-i="${it.i}">🗓️ Préparer une sortie</button>
@@ -940,7 +1132,8 @@ function renderSheet(){
       <div class="part"><h4>${done ? "✓ C’est fait" : "Et vous ?"}</h4>
         ${done ? `<label class="lb" for="pDone">Fait le</label><input type="date" class="field" id="pDone" value="${esc(done.date || "")}" max="${todayYmd()}">`
           : pd && !surprise ? `<p class="sub">📅 Prévu ${fmtDay(pd)} · <button class="link" data-act="day" data-i="${it.i}" data-date="${pd}">préparer</button> · <button class="link" data-act="unplan" data-i="${it.i}">annuler</button></p>` : ""}
-        <div class="btnrow"><button class="btn ${done ? "" : "ok"} sm" data-act="check" data-i="${it.i}">${done ? "↩︎ Décocher" : "✓ C’est fait !"}</button></div></div>
+        <div class="btnrow">${done ? `<button class="btn primary sm" data-act="card" data-i="${it.i}">📸 Carte souvenir à partager</button>` : ""}
+          <button class="btn ${done ? "" : "ok"} sm" data-act="check" data-i="${it.i}">${done ? "↩︎ Décocher" : "✓ C’est fait !"}</button></div></div>
       <div class="part"><h4>📝 Notes</h4><textarea class="field" id="pNote" placeholder="Idées, resto, souvenirs…">${esc(state.notes[it.i] || "")}</textarea></div>
       <div class="part"><h4>📷 Photos <small><button class="link" data-act="addph" data-i="${it.i}">＋ Ajouter</button></small></h4><div class="photos" data-ph="${it.i}"></div></div>
       ${near.length ? `<div class="part"><h4>💡 À combiner dans la journée</h4><div class="nearrow">${near.map(e => `<button class="near" data-act="open" data-i="${e.o.i}">${CATS[e.o.c][0]} ${esc(e.o.t)} · ${e.km} km</button>`).join("")}</div></div>` : ""}
@@ -950,7 +1143,149 @@ function renderSheet(){
   const body = $(".shbody", dlg); if (body) body.scrollTop = scroll;
   if (it.x){ mountMini(it); loadSurPlace(it, "#sp-" + it.i); }
   fillStrip($(".photos", dlg));
+  loadWikiInto(it);
   focusable(dlg);
+}
+
+/* --- « En savoir plus » : résumé Wikipédia (en français si possible) + site officiel via Wikidata --- */
+const wikiCache = loadJSON("suisse100_wiki");
+async function wikiFor(it){
+  const m = IMAGES[it.i];
+  if (!m || m[2] === "commons") return null;
+  if (wikiCache[it.i]) return wikiCache[it.i];
+  let lang = m[2];
+  const summary = (l, t) => fetchJSON(`https://${l}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t.replace(/ /g, "_"))}`, {}, 10000);
+  let s = await summary(lang, m[1]);
+  const q = s.wikibase_item;
+  if (lang !== "fr" && q){                                  // l'article existe-t-il en français ?
+    try {
+      const j = await fetchJSON(`https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&origin=*&ids=${q}&props=sitelinks&sitefilter=frwiki`, {}, 8000);
+      const fr = j.entities && j.entities[q] && j.entities[q].sitelinks && j.entities[q].sitelinks.frwiki;
+      if (fr){ s = await summary("fr", fr.title); lang = "fr"; }
+    } catch(e){}
+  }
+  const title = s.title || m[1];
+  const out = { x: (s.extract || "").trim(), t: title, l: lang, w: null,
+    u: (s.content_urls && s.content_urls.mobile && s.content_urls.mobile.page) || `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}` };
+  if (q){
+    try {
+      const claim = async p => { const j = await fetchJSON(`https://www.wikidata.org/w/api.php?action=wbgetclaims&format=json&origin=*&entity=${q}&property=${p}`, {}, 8000);
+        return ((j.claims || {})[p] || []).map(c => c.mainsnak && c.mainsnak.datavalue && c.mainsnak.datavalue.value).filter(Boolean); };
+      const [web, kinds] = await Promise.all([claim("P856"), claim("P31")]);
+      const commune = kinds.some(k => k && k.id === "Q70208");            // site d'une commune : utile seulement pour un village
+      if (web[0] && /^https?:\/\//i.test(String(web[0])) && (it.c === "vil" || !commune)) out.w = String(web[0]);
+    } catch(e){}
+  }
+  wikiCache[it.i] = out; saveJSON("suisse100_wiki", wikiCache);
+  return out;
+}
+function loadWikiInto(it){
+  const sel = "#wiki-" + it.i, el = () => document.querySelector(sel);
+  if (!el()) return;
+  const show = w => {
+    const e = el(); if (!e) return;
+    if (!w || !w.x){ e.remove(); return; }
+    let host = ""; try { host = w.w ? new URL(w.w).hostname.replace(/^www\./, "") : ""; } catch(err){}
+    const LANGS = { de: "en allemand", it: "en italien", en: "en anglais" }, fr = w.l === "fr";
+    e.innerHTML = `<h4>📖 En savoir plus <small>${esc(w.t)}</small></h4>${fr ? `<p class="wikix">${esc(w.x)}</p>` : ""}
+      <div class="btnrow"><a class="btn sm" href="${esc(w.u)}" target="_blank" rel="noopener">${fr ? "Lire la suite sur Wikipédia" : "Article Wikipédia " + (LANGS[w.l] || "")}</a>
+      ${w.w ? `<a class="btn sm" href="${esc(w.w)}" target="_blank" rel="noopener">🌐 Site officiel${host ? " · " + esc(host) : ""}</a>` : ""}</div>`;
+  };
+  if (wikiCache[it.i]) return show(wikiCache[it.i]);
+  if (!navigator.onLine){ el().remove(); return; }
+  el().innerHTML = `<h4>📖 En savoir plus</h4><p class="spmsg">Chargement…</p>`;
+  wikiFor(it).then(show).catch(() => { const e = el(); if (e) e.remove(); });
+}
+
+/* ================= carte souvenir à partager ================= */
+const loadImg = src => new Promise((res, rej) => { const im = new Image(); if (/^https?:/.test(src)) im.crossOrigin = "anonymous"; im.onload = () => res(im); im.onerror = rej; im.src = src; });
+function wrapLines(g, text, maxW, maxLines){
+  const words = text.split(/\s+/), lines = [];
+  let cur = "";
+  for (const w of words){ const t = cur ? cur + " " + w : w; if (!cur || g.measureText(t).width <= maxW) cur = t; else { lines.push(cur); cur = w; } }
+  if (cur) lines.push(cur);
+  if (lines.length > maxLines){ lines.length = maxLines; lines[maxLines - 1] = lines[maxLines - 1].replace(/\s*\S*$/, "") + "…"; }
+  return lines;
+}
+async function makeCard(it){
+  const W = 1080, H = 1350, cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const g = cv.getContext("2d");
+  try { await Promise.all(['900 96px "Fraunces"', 'italic 800 52px "Fraunces"', '600 36px "Outfit"', '700 36px "Outfit"'].map(f => document.fonts.load(f))); } catch(e){}
+  let img = null, credit = "";                              // votre photo d'abord, sinon celle du lieu
+  const pids = photoIdx.get(String(it.i)) || [];
+  try {
+    if (pids.length) img = await loadImg(await photoURL(pids[0]));
+    else if (imgOf(it)){ img = await loadImg(imgOf(it).replace(/\/\d+px-([^/]+)$/, "/1280px-$1")); credit = "Photo : Wikimedia Commons"; }
+  } catch(e){ img = null; credit = ""; }
+  if (img){ const r = Math.max(W / img.width, H / img.height), w = img.width * r, h = img.height * r; g.drawImage(img, (W - w) / 2, (H - h) / 2, w, h); }
+  else {
+    const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, "#d5301f"); bg.addColorStop(1, "#6e160a");
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    g.font = "280px serif"; g.textAlign = "center"; g.fillText(CATS[it.c][0], W / 2, H * .44); g.textAlign = "left";
+  }
+  const shade = g.createLinearGradient(0, H * .3, 0, H);
+  shade.addColorStop(0, "rgba(0,0,0,0)"); shade.addColorStop(.5, "rgba(0,0,0,.55)"); shade.addColorStop(1, "rgba(0,0,0,.88)");
+  g.fillStyle = shade; g.fillRect(0, 0, W, H);
+  const topShade = g.createLinearGradient(0, 0, 0, 260); topShade.addColorStop(0, "rgba(0,0,0,.5)"); topShade.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = topShade; g.fillRect(0, 0, W, 260);
+  const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+  // logo « Suisse 100 »
+  g.fillStyle = "#d5301f"; rr(64, 64, 84, 84, 22); g.fill();
+  g.fillStyle = "#fff"; g.fillRect(99, 82, 14, 48); g.fillRect(82, 99, 48, 14);
+  g.font = '900 54px "Fraunces"'; g.fillText("Suisse", 172, 126);
+  const sw = g.measureText("Suisse ").width;
+  g.font = 'italic 800 54px "Fraunces"'; g.fillStyle = "#ff8f80"; g.fillText("100", 172 + sw, 126);
+  // compteur
+  const n = allItems().filter(isDone).length, cnt = `${n} / ${GOAL}`;
+  g.font = '700 38px "Outfit"';
+  const cw = g.measureText(cnt).width + 56;
+  g.fillStyle = "rgba(255,253,248,.94)"; rr(W - 64 - cw, 72, cw, 70, 35); g.fill();
+  g.fillStyle = "#221d15"; g.fillText(cnt, W - 64 - cw + 28, 120);
+  // textes du bas
+  const X = 72, MW = W - 144;
+  g.fillStyle = "rgba(255,255,255,.28)"; rr(X, H - 84, MW, 12, 6); g.fill();
+  g.fillStyle = "#e8402e"; rr(X, H - 84, Math.max(12, MW * Math.min(1, n / GOAL)), 12, 6); g.fill();
+  const doneDate = state.done[it.i] && state.done[it.i].date ? fmtDate(state.done[it.i].date) : fmtDate(todayYmd());
+  let y = H - 122;
+  g.font = '600 34px "Outfit"'; g.fillStyle = "rgba(255,255,255,.86)";
+  g.fillText([doneDate, hasNames() ? state.people.a + " & " + state.people.b + " ❤️" : ""].filter(Boolean).join("   ·   "), X, y);
+  y -= 64;
+  g.font = '600 38px "Outfit"'; g.fillStyle = "rgba(255,255,255,.95)";
+  g.fillText(CATS[it.c][0] + "  " + [it.p, it.k].filter(Boolean).join(" · "), X, y);
+  let size = 70, lines = null;
+  for (const s of [104, 92, 80, 70]){ g.font = `900 ${s}px "Fraunces"`; const l = wrapLines(g, it.t, MW, 3); if (l.length <= 2){ size = s; lines = l; break; } }
+  if (!lines){ g.font = '900 70px "Fraunces"'; lines = wrapLines(g, it.t, MW, 3); }
+  g.font = `900 ${size}px "Fraunces"`; g.fillStyle = "#ffffff";
+  y -= 34;
+  for (let i = lines.length - 1; i >= 0; i--){ g.fillText(lines[i], X, y); y -= Math.round(size * 1.06); }
+  g.font = '700 36px "Outfit"'; g.fillStyle = "#ffd36e";
+  g.fillText("✓  ON L’A FAIT !", X, y - 4);
+  if (credit){ g.font = '500 22px "Outfit"'; g.fillStyle = "rgba(255,255,255,.55)"; g.textAlign = "right"; g.fillText(credit, W - 64, H - 34); g.textAlign = "left"; }
+  return await new Promise((res, rej) => cv.toBlob(b => b ? res(b) : rej(new Error("image")), "image/jpeg", 0.9));
+}
+let cardBlob = null, cardUrl = null, cardName = "";
+async function openCard(id){
+  const it = byId(id); if (!it) return;
+  const d = $("#dlgCard");
+  d.innerHTML = `<div class="shhead"><div class="tt"><h3>📸 Carte souvenir</h3><p>${esc(it.t)}</p></div><button class="x" data-close aria-label="Fermer">✕</button></div>
+    <div class="shbody"><p class="spmsg">Création de la carte…</p></div>`;
+  if (!d.open) d.showModal();
+  try {
+    cardBlob = await makeCard(it);
+    if (cardUrl) URL.revokeObjectURL(cardUrl);
+    cardUrl = URL.createObjectURL(cardBlob);
+    cardName = "suisse100-" + norm(it.t).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".jpg";
+    $(".shbody", d).innerHTML = `<img src="${cardUrl}" alt="Carte souvenir : ${esc(it.t)}"><p class="sub" style="margin-top:10px">${nPhotos(it) ? "Avec votre première photo du lieu." : "Ajoutez vos photos dans la fiche : la carte utilisera la vôtre."}</p>`;
+    d.insertAdjacentHTML("beforeend", `<div class="shfoot"><button class="btn primary" data-act="cardShare">📤 Partager</button><button class="btn" data-act="cardSave">⬇ Enregistrer</button></div>`);
+  } catch(e){ $(".shbody", d).innerHTML = `<p class="spmsg">Impossible de créer la carte pour l’instant.</p>`; }
+}
+async function shareCard(){
+  if (!cardBlob) return;
+  const file = new File([cardBlob], cardName, { type: "image/jpeg" });
+  try { if (navigator.canShare && navigator.canShare({ files: [file] })){ await navigator.share({ files: [file], title: "Suisse 100" }); return; } }
+  catch(e){ if (e && e.name === "AbortError") return; }
+  saveFile(cardBlob, cardName); toast("⬇ Image enregistrée");
 }
 $("#dlgItem").addEventListener("input", e => {
   if (e.target.id !== "pNote" || sheetId == null) return;
@@ -1231,30 +1566,51 @@ function planText(){
   L.push("— Suisse 100");
   return L.join("\n");
 }
-async function sharePlan(){
-  const text = planText();
-  try {
-    if (navigator.share){ await navigator.share({ text }); return; }
-  } catch(e){ if (e && e.name === "AbortError") return; }
-  try { await navigator.clipboard.writeText(text); toast("📋 Plan copié — collez-le dans votre messagerie"); }
-  catch(e){ prompt("Copiez le plan :", text); }
-}
-function downloadICS(){
-  const it = byId(day.id), g = day.go && day.go[0];
-  const icsEsc = s => String(s).replace(/\\/g, "\\\\").replace(/[,;]/g, m => "\\" + m).replace(/\r?\n/g, "\\n");
-  const stamp = d => d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + "T" + pad(d.getHours()) + pad(d.getMinutes()) + "00";
+const sharePlan = () => shareText(planText());
+
+/* --- agenda (.ics) avec rappels : sans serveur, c'est l'agenda du téléphone qui notifie --- */
+const icsDay = d => d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
+const icsTime = d => icsDay(d) + "T" + pad(d.getHours()) + pad(d.getMinutes()) + "00";      // heure locale « flottante »
+const icsEsc = s => String(s).replace(/\\/g, "\\\\").replace(/[,;]/g, m => "\\" + m).replace(/\r?\n/g, "\\n");
+const icsBefore = min => { const d = Math.floor(min / 1440), h = Math.floor(min % 1440 / 60), m = Math.round(min % 60);
+  return "-P" + (d ? d + "D" : "") + (h || m || !d ? "T" + (h ? h + "H" : "") + (m || (!h && !d) ? m + "M" : "") : ""); };
+function makeICS({ uid, title, location, desc, start, end, allDay, alarms = [] }){
   const fold = line => { const enc = new TextEncoder(); let out = "", cur = ""; for (const ch of line){ if (enc.encode(cur + ch).length > 73){ out += cur + "\r\n "; cur = ""; } cur += ch; } return out + cur; };
   const L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Suisse 100//FR", "CALSCALE:GREGORIAN", "BEGIN:VEVENT",
-    "UID:s100-" + it.i + "-" + day.date + "@suisse100", "DTSTAMP:" + new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "")];
-  if (g){                                                     // heure locale « flottante » : celle du téléphone
-    const end = day.last ? new Date(day.last.arr * 1000) : new Date((g.dep + 9 * 3600) * 1000);
-    L.push("DTSTART:" + stamp(new Date(g.dep * 1000)), "DTEND:" + stamp(end));
-  } else L.push("DTSTART;VALUE=DATE:" + day.date.replace(/-/g, ""), "DTEND;VALUE=DATE:" + ymd(addDays(parseYmd(day.date), 1)).replace(/-/g, ""));
-  L.push("SUMMARY:" + icsEsc(day.surprise ? "🎁 Sortie surprise" : "🇨🇭 " + it.t));
-  if (!day.surprise) L.push("LOCATION:" + icsEsc(it.p || it.t));
-  L.push("DESCRIPTION:" + icsEsc(planText()), "END:VEVENT", "END:VCALENDAR");
-  saveFile(new Blob([L.map(fold).join("\r\n")], { type: "text/calendar" }), "suisse100-" + day.date + ".ics");
-  toast("📆 Fichier agenda téléchargé — ouvrez-le pour l’ajouter");
+    "UID:" + uid + "@suisse100", "DTSTAMP:" + new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, ""),
+    allDay ? "DTSTART;VALUE=DATE:" + icsDay(start) : "DTSTART:" + icsTime(start),
+    allDay ? "DTEND;VALUE=DATE:" + icsDay(end) : "DTEND:" + icsTime(end),
+    "SUMMARY:" + icsEsc(title)];
+  if (location) L.push("LOCATION:" + icsEsc(location));
+  if (desc) L.push("DESCRIPTION:" + icsEsc(desc));
+  for (const a of alarms) if (a.before > 0) L.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsEsc(a.text), "TRIGGER:" + icsBefore(a.before), "END:VALARM");
+  L.push("END:VEVENT", "END:VCALENDAR");
+  return L.map(fold).join("\r\n");
+}
+function saveICS(ics, name, msg){ saveFile(new Blob([ics], { type: "text/calendar" }), name); toast(msg || "📆 Fichier agenda téléchargé — ouvrez-le pour l’ajouter", null, null, 6500); }
+function downloadICS(){                                      // la sortie préparée, avec rappel la veille et avant le départ
+  const it = byId(day.id), g = day.go && day.go[0], d = parseYmd(day.date), what = day.surprise ? "sortie surprise 🎁" : it.t;
+  const day0 = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const eve = new Date(day0); eve.setDate(eve.getDate() - 1); eve.setHours(20, 0, 0, 0);
+  let start, end, alarms;
+  if (g){
+    start = new Date(g.dep * 1000); end = day.last ? new Date(day.last.arr * 1000) : new Date((g.dep + 9 * 3600) * 1000);
+    const pack = packFor(it, day.wx, day.date).slice(0, 2).map(stripEmoji).join(", ").toLowerCase();
+    alarms = [{ before: Math.round((start - eve) / 60000), text: `Demain : ${what} — départ ${hm(g.dep)}. N’oubliez pas : ${pack}` },
+              { before: 60, text: `Départ dans 1 h (${hm(g.dep)} de ${day.from || home().name})` }];
+  } else { start = day0; end = addDays(day0, 1); alarms = [{ before: 240, text: `Demain : ${what}` }]; }
+  saveICS(makeICS({ uid: "s100-" + it.i + "-" + day.date, title: day.surprise ? "🎁 Sortie surprise" : "🇨🇭 " + it.t,
+    location: day.surprise ? "" : (it.p || it.t), desc: planText(), start, end, allDay: !g, alarms }),
+    "suisse100-" + day.date + ".ics", "📆 Ouvrez le fichier pour l’ajouter — rappels la veille à 20 h" + (g ? " et 1 h avant le départ" : ""));
+}
+function remindEvent(it){                                    // fête : rappel une semaine avant (10 h) et la veille (19 h)
+  const w = nextEvent(it);
+  if (!w){ toast("Pas de date connue pour cette fête"); return; }
+  const s = new Date(w.s.getFullYear(), w.s.getMonth(), w.s.getDate()), e = addDays(new Date(w.e.getFullYear(), w.e.getMonth(), w.e.getDate()), 1);
+  saveICS(makeICS({ uid: "s100-ev-" + it.i + "-" + ymd(w.s), title: "🎉 " + it.t + (w.approx ? " (date à confirmer)" : ""), location: it.p || "",
+    desc: (it.d || "") + (w.note ? "\n" + w.note : "") + "\n— Suisse 100", start: s, end: e, allDay: true,
+    alarms: [{ before: 6 * 1440 + 14 * 60, text: "Dans une semaine : " + it.t + " — on y va ?" }, { before: 300, text: "Demain : " + it.t }] }),
+    "suisse100-" + norm(it.t).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".ics", "🔔 Ouvrez le fichier : rappels une semaine avant et la veille");
 }
 function saveFile(blob, name){
   const a = document.createElement("a");
@@ -1694,6 +2050,12 @@ document.addEventListener("click", e => {
     case "random": { const pool = allItems().filter(it => !isDone(it) && matches(it));
       if (!pool.length){ toast("Rien à tirer au sort avec ces filtres"); break; }
       openItem(pool[Math.floor(Math.random() * pool.length)].i); break; }
+    case "remind": remindEvent(byId(id)); break;
+    case "card": openCard(id); break;
+    case "cardShare": shareCard(); break;
+    case "cardSave": if (cardBlob){ saveFile(cardBlob, cardName); toast("⬇ Image enregistrée"); } break;
+    case "wkplan": case "wkshare": case "wkics": { const c = wkShown[+a.dataset.k]; if (!c) break;
+      if (a.dataset.act === "wkplan") wkPlan(c); else if (a.dataset.act === "wkshare") shareText(wkText(c)); else wkICS(c); break; }
     case "addph": photoTarget = id; $("#filePhoto").click(); break;
     case "onmap": showOnMap(id); break;
     case "del": removeItem(id); break;

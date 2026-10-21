@@ -3,7 +3,7 @@
      cache en secours hors ligne ou si le réseau traîne plus de 3,5 s ;
    - polices et Leaflet : cache d'abord, mis à jour en arrière-plan ;
    - API (CFF, météo, OpenStreetMap, Wikipédia) et images : jamais mises en cache ici. */
-const VERSION = "s100-v13";
+const VERSION = "s100-v14";
 const CORE = ["./", "./index.html", "./app.js", "./data.js", "./images.js", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png"];
 const CDN = ["fonts.googleapis.com", "fonts.gstatic.com", "unpkg.com"];
 

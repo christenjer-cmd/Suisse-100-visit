@@ -425,6 +425,31 @@ dialog::backdrop{background:rgba(15,10,5,.5);backdrop-filter:blur(3px);-webkit-b
 .bdg .pg span{display:block;height:100%;background:var(--red);border-radius:9px}
 .confetti{position:fixed;z-index:4000;pointer-events:none;font-size:22px;left:0;top:0;will-change:transform,opacity}
 
+/* journée / week-end */
+.modeseg{display:flex;background:var(--soft);border-radius:999px;padding:3px;margin:2px 0 4px}
+.modeseg button{flex:1;border:0;background:transparent;color:var(--mut);font-size:13.5px;font-weight:700;padding:8px 6px;border-radius:999px}
+.modeseg button.on{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+.wk{border:1px solid var(--line);border-radius:20px;overflow:hidden;margin:12px 0 0;background:var(--card);box-shadow:var(--shadow)}
+.wkimgs{display:grid;grid-template-columns:1fr 1fr;gap:2px;height:132px;background:var(--soft)}
+.wkimgs span{position:relative;overflow:hidden;display:grid;place-items:center;font-size:34px}
+.wkimgs img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.wkbody{padding:13px 14px 14px}
+.wkbody .t{font-family:"Fraunces",Georgia,serif;font-size:19px;font-weight:800;line-height:1.2;margin:3px 0 2px}
+.wkbody .p{font-size:12.5px;color:var(--mut)}
+.days{margin-top:10px;display:grid;gap:6px}
+.day{display:flex;gap:10px;align-items:baseline;font-size:13.5px}
+.day > b{flex:none;width:74px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}
+.day .its{display:flex;flex-wrap:wrap;gap:5px}
+.day .its button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 10px;font-size:12.5px;font-weight:600}
+.evrow .bell{border:1px solid var(--line);background:var(--card);border-radius:50%;width:34px;height:34px;flex:none;font-size:14px}
+
+/* en savoir plus */
+.wikix{font-size:13.5px;line-height:1.6;margin:0;display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden}
+
+/* carte souvenir */
+#dlgCard .shbody{text-align:center}
+#dlgCard img{max-width:100%;max-height:62vh;border-radius:16px;box-shadow:var(--shadow-2);margin-top:12px}
+
 /* ---------- toast ---------- */
 #toast{position:fixed;left:50%;bottom:calc(92px + var(--safe-b));transform:translate(-50%,20px);z-index:3000;
   background:var(--ink);color:var(--bg);border-radius:16px;padding:11px 14px 11px 16px;font-size:14px;font-weight:500;
@@ -516,6 +541,7 @@ dialog::backdrop{background:rgba(15,10,5,.5);backdrop-filter:blur(3px);-webkit-b
 <dialog id="dlgItem" class="sheet" aria-label="Fiche"></dialog>
 <dialog id="dlgDay" class="sheet" aria-label="Préparer la sortie"></dialog>
 <dialog id="dlgSettings" class="sheet" aria-label="Réglages"></dialog>
+<dialog id="dlgCard" class="sheet" aria-label="Carte souvenir"></dialog>
 <dialog id="dlgAdd" class="sheet" aria-label="Ajouter une idée">
   <form method="dialog" id="formAdd" style="display:contents">
     <div class="shhead"><div class="tt"><h3>Ajouter une idée</h3><p>Elle rejoindra votre liste et la carte.</p></div><button type="button" class="x" data-close aria-label="Fermer">✕</button></div>
